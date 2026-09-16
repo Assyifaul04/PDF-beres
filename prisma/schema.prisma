@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==============================================================================
+// 1. ENUMS
+// ==============================================================================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PlanType {
+  FREE
+  PREMIUM
+}
+
+enum StorageProvider {
+  SUPABASE
+  GOOGLE_DRIVE
+}
+
+enum MigrationStatus {
+  TEMP
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ToolType {
+  MERGE_PDF
+  SPLIT_PDF
+  COMPRESS_PDF
+  PDF_TO_WORD
+  PDF_TO_POWERPOINT
+  PDF_TO_EXCEL
+  WORD_TO_PDF
+  POWERPOINT_TO_PDF
+  EXCEL_TO_PDF
+  EDIT_PDF
+  PDF_TO_JPG
+  JPG_TO_PDF
+  SIGN_PDF
+  WATERMARK_PDF
+  ROTATE_PDF
+  HTML_TO_PDF
+  UNLOCK_PDF
+  PROTECT_PDF
+  ORGANIZE_PDF
+  REPAIR_PDF
+  PAGE_NUMBERS
+}
+
+enum TaskStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ==============================================================================
+// 2. AUTHENTICATION MODELS
+// ==============================================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  role Role     @default(USER)
+  plan PlanType @default(FREE)
+
+  usedBytes BigInt @default(0) // total byte yang dipakai
+  taskCount Int    @default(0) // total task yang pernah dibuat
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  files    File[]
+  tasks    DocumentTask[]
+
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==============================================================================
+// 3. CORE APPLICATION MODELS
+// ==============================================================================
+
+model File {
+  id     String  @id @default(cuid())
+  userId String? // nullable: file bisa anonim (guest), di-claim saat signup
+
+  originalName String
+  fileKey      String  @unique // path unik di storage (Supabase/GDrive)
+  mimeType     String
+  sizeBytes    BigInt  // BigInt agar konsisten & support >2GB
+
+  // Migration Supabase -> Google Drive
+  storageProvider StorageProvider @default(SUPABASE)
+  migrationStatus MigrationStatus @default(TEMP)
+  driveFileId     String?
+  moveToDriveAt   DateTime        @default(now()) // jadwal pindah (default: sekarang, update saat dibuat)
+
+  createdAt DateTime @default(now())
+  expiresAt DateTime // kapan file dihapus total
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  taskInputs  TaskInputFile[]
+  taskOutputs TaskOutputFile[]
+
+  @@index([userId])
+  @@index([migrationStatus, moveToDriveAt]) // untuk cron migrasi
+  @@index([expiresAt])                      // untuk cron cleanup
+  @@map("files")
+}
+
+model DocumentTask {
+  id           String     @id @default(cuid())
+  userId       String?
+  toolType     ToolType
+  status       TaskStatus @default(PENDING)
+  errorMessage String?    @db.Text
+
+  settings Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  inputFiles  TaskInputFile[]
+  outputFiles TaskOutputFile[]
+
+  @@index([userId])
+  @@index([status, createdAt]) // cron worker ambil task PENDING
+  @@index([toolType, createdAt]) // analitik per tool
+  @@map("document_tasks")
+}
+
+model TaskInputFile {
+  id     String @id @default(cuid())
+  taskId String
+  fileId String
+  order  Int    @default(0)
+
+  task DocumentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  file File         @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, fileId])
+  @@index([taskId])
+  @@index([fileId])
+  @@map("task_input_files")
+}
+
+model TaskOutputFile {
+  id     String @id @default(cuid())
+  taskId String
+  fileId String
+
+  task DocumentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  file File         @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, fileId])
+  @@index([taskId])
+  @@index([fileId])
+  @@map("task_output_files")
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     String   // "info" | "warn" | "error"
+  action    String   // "file.upload" | "task.completed" | ...
+  message   String   @db.Text
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([level, createdAt])
+  @@index([action, createdAt])
+  @@map("system_logs")
+}
