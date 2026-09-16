@@ -7,11 +7,22 @@ import { useState, useRef, useEffect } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserMenu } from "@/components/auth/user-menu";
 
 type NavLink = {
   href: string;
   label: string;
   children?: { href: string; label: string; desc?: string }[];
+};
+
+type NavbarProps = {
+  session: {
+    user?: {
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
+  } | null;
 };
 
 const navLinks: NavLink[] = [
@@ -46,8 +57,9 @@ const navLinks: NavLink[] = [
   },
 ];
 
-export function Navbar() {
+export function Navbar({ session }: NavbarProps) {
   const [open, setOpen] = useState(false);
+  const isLoggedIn = !!session?.user;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur">
@@ -87,18 +99,24 @@ export function Navbar() {
         {/* CTA + Theme toggle */}
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
-          <Link
-            href="/login"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/signup"
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            Get Started
-          </Link>
+          {isLoggedIn ? (
+            <UserMenu user={session.user!} />
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -115,7 +133,7 @@ export function Navbar() {
       <div
         className={cn(
           "overflow-hidden border-t transition-all md:hidden",
-          open ? "max-h-[32rem]" : "max-h-0 border-transparent"
+          open ? "max-h-[40rem]" : "max-h-0 border-transparent"
         )}
       >
         <div className="flex items-center justify-between px-4 pt-4">
@@ -124,6 +142,7 @@ export function Navbar() {
           </span>
           <ThemeToggle />
         </div>
+
         <ul className="space-y-1 px-4 py-4">
           {navLinks.map((link) =>
             link.children ? (
@@ -141,6 +160,55 @@ export function Navbar() {
             )
           )}
         </ul>
+
+        {/* Mobile auth section */}
+        <div className="border-t px-4 py-4">
+          {isLoggedIn ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {session.user?.image ? (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user.name ?? "User"}
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
+                    {session.user?.name?.[0]?.toUpperCase() ?? "U"}
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">
+                    {session.user?.name ?? "User"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {session.user?.email}
+                  </span>
+                </div>
+              </div>
+              <UserMenu user={session.user!} />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="rounded-lg border px-4 py-2 text-center text-sm font-medium hover:bg-muted"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setOpen(false)}
+                className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Get Started
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -151,7 +219,6 @@ function DropdownNavItem({ link }: { link: NavLink }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Tutup dropdown saat klik di luar
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -178,10 +245,7 @@ function DropdownNavItem({ link }: { link: NavLink }) {
       >
         {link.label}
         <ChevronDown
-          className={cn(
-            "h-4 w-4 transition-transform",
-            open && "rotate-180"
-          )}
+          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
         />
       </button>
 
@@ -239,6 +303,7 @@ function MobileDropdownItem({ link }: { link: NavLink }) {
             <li key={child.href}>
               <Link
                 href={child.href}
+                onClick={() => setOpen(false)}
                 className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 {child.label}
