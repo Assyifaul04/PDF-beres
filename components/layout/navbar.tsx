@@ -1,65 +1,33 @@
 // components/layout/navbar.tsx
-"use client";
+"use client"
 
-import Link from "next/link";
-import Image from "next/image";
-import { useState, useRef, useEffect } from "react";
-import { Menu, X, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { UserMenu } from "@/components/auth/user-menu";
+import Link from "next/link"
+import Image from "next/image"
+import { useState } from "react"
+import { Menu, X } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { ThemeToggle } from "@/components/layout/theme-toggle"
+import { UserMenu } from "@/components/auth/user-menu"
 
-type NavLink = {
-  href: string;
-  label: string;
-  children?: { href: string; label: string; desc?: string }[];
-};
+// Import komponen menu yang sudah dipisah
+import { NavDropdown } from "@/components/menu/nav-dropdown"
+import { NavDropdownMobile } from "@/components/menu/nav-dropdown-mobile"
+import { PdfConversionMenu } from "@/components/menu/pdf-conversion-menu"
+import { AllToolsMenu } from "@/components/menu/all-tools-menu"
 
 type NavbarProps = {
   session: {
     user?: {
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
-  } | null;
-};
-
-const navLinks: NavLink[] = [
-  { href: "/combine-pdf", label: "Combine PDF" },
-  { href: "/separate-pdf", label: "Separate PDF" },
-  { href: "/compress-pdf", label: "Compress PDF" },
-  {
-    href: "/convert-pdf",
-    label: "PDF Conversion",
-    children: [
-      { href: "/convert-pdf/pdf-to-word", label: "PDF to Word" },
-      { href: "/convert-pdf/pdf-to-excel", label: "PDF to Excel" },
-      { href: "/convert-pdf/pdf-to-jpg", label: "PDF to JPG" },
-      { href: "/convert-pdf/pdf-to-ppt", label: "PDF to PowerPoint" },
-      { href: "/convert-pdf/word-to-pdf", label: "Word to PDF" },
-      { href: "/convert-pdf/jpg-to-pdf", label: "JPG to PDF" },
-    ],
-  },
-  {
-    href: "/tools",
-    label: "All PDF Tools",
-    children: [
-      { href: "/tools/merge-pdf", label: "Merge PDF" },
-      { href: "/tools/split-pdf", label: "Split PDF" },
-      { href: "/tools/rotate-pdf", label: "Rotate PDF" },
-      { href: "/tools/protect-pdf", label: "Protect PDF" },
-      { href: "/tools/unlock-pdf", label: "Unlock PDF" },
-      { href: "/tools/watermark-pdf", label: "Watermark PDF" },
-      { href: "/tools/sign-pdf", label: "Sign PDF" },
-      { href: "/tools/organize-pdf", label: "Organize PDF" },
-    ],
-  },
-];
+      name?: string | null
+      email?: string | null
+      image?: string | null
+    }
+  } | null
+}
 
 export function Navbar({ session }: NavbarProps) {
-  const [open, setOpen] = useState(false);
-  const isLoggedIn = !!session?.user;
+  const [open, setOpen] = useState(false)
+  const isLoggedIn = !!session?.user
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur">
@@ -78,22 +46,44 @@ export function Navbar({ session }: NavbarProps) {
 
         {/* Desktop links */}
         <ul className="hidden items-center gap-6 md:flex">
-          {navLinks.map((link) =>
-            link.children ? (
-              <li key={link.href}>
-                <DropdownNavItem link={link} />
-              </li>
-            ) : (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            )
-          )}
+          <li>
+            <Link
+              href="/combine-pdf"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Combine PDF
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/separate-pdf"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Separate PDF
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/compress-pdf"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Compress PDF
+            </Link>
+          </li>
+
+          {/* PDF Conversion — 2 kolom seperti gambar */}
+          <li>
+            <NavDropdown label="PDF Conversion" href="/convert-pdf">
+              <PdfConversionMenu />
+            </NavDropdown>
+          </li>
+
+          {/* All PDF Tools */}
+          <li>
+            <NavDropdown label="All PDF Tools" href="/tools">
+              <AllToolsMenu />
+            </NavDropdown>
+          </li>
         </ul>
 
         {/* CTA + Theme toggle */}
@@ -133,7 +123,7 @@ export function Navbar({ session }: NavbarProps) {
       <div
         className={cn(
           "overflow-hidden border-t transition-all md:hidden",
-          open ? "max-h-[40rem]" : "max-h-0 border-transparent"
+          open ? "max-h-[60rem]" : "max-h-0 border-transparent"
         )}
       >
         <div className="flex items-center justify-between px-4 pt-4">
@@ -144,21 +134,43 @@ export function Navbar({ session }: NavbarProps) {
         </div>
 
         <ul className="space-y-1 px-4 py-4">
-          {navLinks.map((link) =>
-            link.children ? (
-              <MobileDropdownItem key={link.href} link={link} />
-            ) : (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            )
-          )}
+          <li>
+            <Link
+              href="/combine-pdf"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              Combine PDF
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/separate-pdf"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              Separate PDF
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/compress-pdf"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              Compress PDF
+            </Link>
+          </li>
+
+          {/* PDF Conversion — mobile pakai versi list */}
+          <NavDropdownMobile label="PDF Conversion">
+            <PdfConversionMenu />
+          </NavDropdownMobile>
+
+          {/* All PDF Tools — mobile */}
+          <NavDropdownMobile label="All PDF Tools">
+            <AllToolsMenu />
+          </NavDropdownMobile>
         </ul>
 
         {/* Mobile auth section */}
@@ -211,107 +223,5 @@ export function Navbar({ session }: NavbarProps) {
         </div>
       </div>
     </header>
-  );
-}
-
-/* ---------- Dropdown untuk desktop ---------- */
-function DropdownNavItem({ link }: { link: NavLink }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="true"
-        className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        {link.label}
-        <ChevronDown
-          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
-        />
-      </button>
-
-      <div
-        className={cn(
-          "absolute left-0 top-full pt-2 transition-all",
-          open
-            ? "visible opacity-100 translate-y-0"
-            : "invisible opacity-0 -translate-y-1"
-        )}
-      >
-        <ul className="min-w-[220px] rounded-xl border bg-popover p-2 shadow-lg">
-          {link.children?.map((child) => (
-            <li key={child.href}>
-              <Link
-                href={child.href}
-                className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                {child.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Dropdown untuk mobile ---------- */
-function MobileDropdownItem({ link }: { link: NavLink }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-      >
-        {link.label}
-        <ChevronDown
-          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
-        />
-      </button>
-
-      <div
-        className={cn(
-          "overflow-hidden transition-all",
-          open ? "max-h-96" : "max-h-0"
-        )}
-      >
-        <ul className="ml-3 space-y-1 border-l pl-3 pt-1">
-          {link.children?.map((child) => (
-            <li key={child.href}>
-              <Link
-                href={child.href}
-                onClick={() => setOpen(false)}
-                className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                {child.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </li>
-  );
+  )
 }

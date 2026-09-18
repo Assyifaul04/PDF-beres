@@ -111,8 +111,8 @@ model User {
   role Role     @default(USER)
   plan PlanType @default(FREE)
 
-  usedBytes BigInt @default(0) // total byte yang dipakai
-  taskCount Int    @default(0) // total task yang pernah dibuat
+  usedBytes BigInt @default(0)
+  taskCount Int    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -140,21 +140,20 @@ model VerificationToken {
 
 model File {
   id     String  @id @default(cuid())
-  userId String? // nullable: file bisa anonim (guest), di-claim saat signup
+  userId String?
 
   originalName String
-  fileKey      String  @unique // path unik di storage (Supabase/GDrive)
+  fileKey      String  @unique
   mimeType     String
-  sizeBytes    BigInt  // BigInt agar konsisten & support >2GB
+  sizeBytes    BigInt
 
-  // Migration Supabase -> Google Drive
   storageProvider StorageProvider @default(SUPABASE)
   migrationStatus MigrationStatus @default(TEMP)
   driveFileId     String?
-  moveToDriveAt   DateTime        @default(now()) // jadwal pindah (default: sekarang, update saat dibuat)
+  moveToDriveAt   DateTime        @default(now())
 
   createdAt DateTime @default(now())
-  expiresAt DateTime // kapan file dihapus total
+  expiresAt DateTime
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -162,8 +161,8 @@ model File {
   taskOutputs TaskOutputFile[]
 
   @@index([userId])
-  @@index([migrationStatus, moveToDriveAt]) // untuk cron migrasi
-  @@index([expiresAt])                      // untuk cron cleanup
+  @@index([migrationStatus, moveToDriveAt])
+  @@index([expiresAt])
   @@map("files")
 }
 
@@ -185,8 +184,8 @@ model DocumentTask {
   outputFiles TaskOutputFile[]
 
   @@index([userId])
-  @@index([status, createdAt]) // cron worker ambil task PENDING
-  @@index([toolType, createdAt]) // analitik per tool
+  @@index([status, createdAt])
+  @@index([toolType, createdAt])
   @@map("document_tasks")
 }
 
@@ -221,8 +220,8 @@ model TaskOutputFile {
 
 model SystemLog {
   id        String   @id @default(cuid())
-  level     String   // "info" | "warn" | "error"
-  action    String   // "file.upload" | "task.completed" | ...
+  level     String
+  action    String
   message   String   @db.Text
   meta      Json?
   createdAt DateTime @default(now())
@@ -230,4 +229,51 @@ model SystemLog {
   @@index([level, createdAt])
   @@index([action, createdAt])
   @@map("system_logs")
+}
+
+// ==============================================================================
+// 4. DYNAMIC MENU MODELS (BARU)
+// ==============================================================================
+
+model ToolCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique   // "Konversi ke PDF"
+  slug        String   @unique   // "konversi-ke-pdf"
+  description String?  @db.Text
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menus ToolMenu[]
+
+  @@index([order])
+  @@index([isActive])
+  @@map("tool_categories")
+}
+
+model ToolMenu {
+  id          String   @id @default(cuid())
+  categoryId  String
+  title       String              // "WORD ke PDF"
+  slug        String   @unique    // "word-ke-pdf"
+  description String?  @db.Text   // "Konversi file Word ke PDF"
+  href        String              // "/convert-pdf/word-to-pdf"
+  icon        String?             // "/image/icons/word.png"
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  // Relasi opsional ke ToolType
+  toolType    ToolType?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category ToolCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId, order])
+  @@index([isActive])
+  @@index([toolType])
+  @@map("tool_menus")
 }

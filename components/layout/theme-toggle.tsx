@@ -1,15 +1,15 @@
 // components/layout/theme-toggle.tsx
-"use client";
+"use client"
 
-import * as React from "react";
-import { useTheme } from "@teispace/next-themes";
-import { Moon, Sun } from "lucide-react";
+import * as React from "react"
+import { useTheme } from "next-themes"
+import { Moon, Sun } from "lucide-react"
 
 export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
 
-  React.useEffect(() => setMounted(true), []);
+  React.useEffect(() => setMounted(true), [])
 
   if (!mounted) {
     return (
@@ -18,10 +18,10 @@ export function ThemeToggle() {
         aria-hidden
         className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/40"
       />
-    );
+    )
   }
 
-  const isDark = resolvedTheme === "dark";
+  const isDark = resolvedTheme === "dark"
 
   return (
     <button
@@ -33,5 +33,5 @@ export function ThemeToggle() {
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
-  );
+  )
 }

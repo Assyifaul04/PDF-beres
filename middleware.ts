@@ -7,22 +7,32 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    // Admin yang buka "/" → redirect ke /dashboard
+    // ==========================================
+    // ADMIN ROUTING
+    // ==========================================
+
+    // Admin buka "/" → redirect ke /admin/dashboard
     if (pathname === "/" && token?.role === "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
 
-    // Admin yang buka /user/* → redirect ke /dashboard (opsional)
+    // Admin buka /user/* → redirect ke /admin/dashboard
     if (pathname.startsWith("/user") && token?.role === "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
 
-    // User biasa yang buka /admin/* → redirect ke "/"
+    // ==========================================
+    // USER ROUTING
+    // ==========================================
+
+    // User biasa (bukan admin) buka /admin/* → redirect ke "/"
     if (pathname.startsWith("/admin") && token?.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
-    // Anti-cache
+    // ==========================================
+    // ANTI-CACHE (untuk route protected)
+    // ==========================================
     const response = NextResponse.next();
     response.headers.set(
       "Cache-Control",
@@ -37,7 +47,7 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Public paths
+        // Public paths — boleh diakses tanpa login
         const publicPaths = ["/", "/login", "/signup", "/terms", "/privacy"];
         const isPublic = publicPaths.some(
           (p) => pathname === p || pathname.startsWith(p + "/")
@@ -46,11 +56,6 @@ export default withAuth(
 
         // Wajib login
         if (!token) return false;
-
-        // /dashboard hanya untuk ADMIN
-        if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-          return token.role === "ADMIN";
-        }
 
         // /admin/* hanya untuk ADMIN
         if (pathname.startsWith("/admin")) {
