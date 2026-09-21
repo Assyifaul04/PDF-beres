@@ -1,32 +1,70 @@
 // components/menu/nav-dropdown.tsx
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { ChevronDown } from "lucide-react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 type NavDropdownProps = {
-  label: string
-  href: string
-  children: React.ReactNode
-  /** apakah dropdown lebar (2 kolom) atau normal */
-  wide?: boolean
-}
+  label: string;
+  href: string;
+  children: React.ReactNode;
+  align?: "start" | "center" | "end";
+  panelClassName?: string;
+};
 
-export function NavDropdown({ label, href, children, wide = false }: NavDropdownProps) {
-  const [open, setOpen] = React.useState(false)
-  const ref = React.useRef<HTMLDivElement>(null)
+export function NavDropdown({
+  label,
+  href,
+  children,
+  align = "start",
+  panelClassName,
+}: NavDropdownProps) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  const [arrowLeft, setArrowLeft] = React.useState<number | null>(null);
 
+  // Close on click outside
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
+        setOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Close on Escape
+  React.useEffect(() => {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    if (open) {
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }
+  }, [open]);
+
+  // Hitung posisi arrow
+  React.useEffect(() => {
+    if (!open || !triggerRef.current || !panelRef.current) return;
+
+    const trigger = triggerRef.current.getBoundingClientRect();
+    const panel = panelRef.current.getBoundingClientRect();
+
+    const triggerCenter = trigger.left + trigger.width / 2;
+    const offset = triggerCenter - panel.left;
+
+    setArrowLeft(offset);
+  }, [open]);
+
+  const alignClass = {
+    start: "left-0",
+    center: "left-1/2 -translate-x-1/2",
+    end: "right-0",
+  }[align];
 
   return (
     <div
@@ -35,31 +73,59 @@ export function NavDropdown({ label, href, children, wide = false }: NavDropdown
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
+      {/* Trigger — TANPA chevron */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="true"
-        className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        {label}
-        <ChevronDown
-          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
-        />
-      </button>
-
-      <div
         className={cn(
-          "absolute left-0 top-full pt-2 transition-all",
+          "flex items-center text-sm font-medium transition-colors",
           open
-            ? "visible opacity-100 translate-y-0"
-            : "invisible opacity-0 -translate-y-1"
+            ? "text-foreground"
+            : "text-muted-foreground hover:text-foreground"
         )}
       >
-        <div className="rounded-xl border bg-popover shadow-lg">
-          {children}
+        {label}
+      </button>
+
+      {/* Panel Wrapper */}
+      <div
+        className={cn(
+          "absolute top-full z-[100] pt-6 transition-all duration-200 ease-out",
+          alignClass,
+          open
+            ? "visible translate-y-0 opacity-100"
+            : "invisible -translate-y-2 opacity-0"
+        )}
+      >
+        <div className="relative" ref={panelRef}>
+          {/* Panel Konten */}
+          <div
+            className={cn(
+              "relative z-10 rounded-none border border-border/60 bg-popover",
+              "shadow-[0_12px_40px_-8px_rgba(0,0,0,0.18)] ring-1 ring-black/5",
+              "max-w-[calc(100vw-2rem)] overflow-hidden",
+              "animate-in fade-in-0 zoom-in-95",
+              panelClassName
+            )}
+          >
+            {children}
+          </div>
+
+          {/* ARROW */}
+          <div
+            className="absolute -top-[6px] z-20 h-3.5 w-3.5 rotate-45 border-l border-t border-border/60 bg-popover shadow-[-4px_-4px_10px_rgba(0,0,0,0.02)]"
+            style={
+              arrowLeft !== null
+                ? { left: `${arrowLeft - 7}px` }
+                : { left: "50%", transform: "translateX(-50%) rotate(45deg)" }
+            }
+            aria-hidden="true"
+          />
         </div>
       </div>
     </div>
-  )
+  );
 }

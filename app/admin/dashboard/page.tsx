@@ -1,4 +1,4 @@
-//app/admin/dashboard/page.tsx
+// app/admin/dashboard/page.tsx
 "use client"
 
 import * as React from "react"
@@ -13,6 +13,15 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Users,
   Folder,
@@ -28,35 +37,43 @@ import {
   TrendingUp,
   FileText,
   ArrowRight,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react"
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts"
+import { toast } from "sonner"
+import { formatDistanceToNow, format } from "date-fns"
+import { id as localeId } from "date-fns/locale"
 
 // ==============================================================================
-// TYPE DEFINITIONS (mengikuti schema Prisma)
+// TYPES
 // ==============================================================================
 
-type Role = "USER" | "ADMIN"
-type PlanType = "FREE" | "PREMIUM"
-type StorageProvider = "SUPABASE" | "GOOGLE_DRIVE"
-type MigrationStatus = "TEMP" | "PROCESSING" | "COMPLETED" | "FAILED"
-type TaskStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
-
-type Stats = {
+type DashboardData = {
   // User
   totalUsers: number
-  adminUsers: number
-  premiumUsers: number
-  freeUsers: number
+  totalAdmins: number
+  totalPremiumUsers: number
+  totalFreeUsers: number
 
   // File
   totalFiles: number
-  totalSizeBytes: bigint
   supabaseFiles: number
   driveFiles: number
+  totalSizeBytes: string
+  expiredFiles: number
   tempFiles: number
   processingMigration: number
   completedMigration: number
   failedMigration: number
-  expiredFiles: number
 
   // DocumentTask
   totalTasks: number
@@ -73,75 +90,48 @@ type Stats = {
   // SystemLog
   totalLogs: number
   errorLogs: number
+
+  // Recent
+  recentUsers: Array<{
+    id: string
+    name: string | null
+    email: string | null
+    image: string | null
+    role: string
+    plan: string
+    createdAt: string
+  }>
+  recentTasks: Array<{
+    id: string
+    toolType: string
+    status: string
+    errorMessage: string | null
+    createdAt: string
+    user: { name: string | null; email: string | null; image: string | null } | null
+  }>
+  recentLogs: Array<{
+    id: string
+    level: string
+    action: string
+    message: string
+    createdAt: string
+  }>
+
+  // Chart
+  chartData: Array<{
+    date: string
+    users: number
+    files: number
+    tasks: number
+  }>
 }
-
-// ==============================================================================
-// MOCK DATA (ganti dengan fetch dari API / Prisma)
-// ==============================================================================
-
-const mockStats: Stats = {
-  totalUsers: 1240,
-  adminUsers: 5,
-  premiumUsers: 320,
-  freeUsers: 915,
-
-  totalFiles: 8420,
-  totalSizeBytes: BigInt(52_428_800_000), // ~52 GB
-  supabaseFiles: 3200,
-  driveFiles: 5220,
-  tempFiles: 120,
-  processingMigration: 45,
-  completedMigration: 8100,
-  failedMigration: 15,
-  expiredFiles: 80,
-
-  totalTasks: 15600,
-  pendingTasks: 42,
-  processingTasks: 18,
-  completedTasks: 15300,
-  failedTasks: 240,
-
-  totalCategories: 6,
-  totalMenus: 21,
-  activeMenus: 19,
-
-  totalLogs: 45200,
-  errorLogs: 128,
-}
-
-const recentTasks: {
-  id: string
-  toolType: string
-  status: TaskStatus
-  user: string
-  createdAt: string
-}[] = [
-  { id: "tsk_1", toolType: "MERGE_PDF", status: "COMPLETED", user: "budi@mail.com", createdAt: "2 min ago" },
-  { id: "tsk_2", toolType: "WORD_TO_PDF", status: "PROCESSING", user: "siti@mail.com", createdAt: "5 min ago" },
-  { id: "tsk_3", toolType: "SPLIT_PDF", status: "PENDING", user: "andi@mail.com", createdAt: "8 min ago" },
-  { id: "tsk_4", toolType: "COMPRESS_PDF", status: "FAILED", user: "dewi@mail.com", createdAt: "12 min ago" },
-  { id: "tsk_5", toolType: "PDF_TO_JPG", status: "COMPLETED", user: "rizky@mail.com", createdAt: "15 min ago" },
-]
-
-const toolCategories: {
-  name: string
-  slug: string
-  menuCount: number
-  isActive: boolean
-}[] = [
-  { name: "Konversi ke PDF", slug: "konversi-ke-pdf", menuCount: 5, isActive: true },
-  { name: "Konversi dari PDF", slug: "konversi-dari-pdf", menuCount: 4, isActive: true },
-  { name: "Edit PDF", slug: "edit-pdf", menuCount: 6, isActive: true },
-  { name: "Keamanan PDF", slug: "keamanan-pdf", menuCount: 3, isActive: true },
-  { name: "Organize PDF", slug: "organize-pdf", menuCount: 3, isActive: true },
-]
 
 // ==============================================================================
 // HELPERS
 // ==============================================================================
 
-function formatBytes(bytes: bigint): string {
-  const num = Number(bytes)
+function formatBytes(bytesStr: string): string {
+  const num = Number(bytesStr)
   if (num === 0) return "0 B"
   const k = 1024
   const sizes = ["B", "KB", "MB", "GB", "TB"]
@@ -149,13 +139,19 @@ function formatBytes(bytes: bigint): string {
   return `${(num / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
 }
 
-function statusBadge(status: TaskStatus | MigrationStatus) {
-  const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
+function statusBadge(status: string) {
+  const map: Record<
+    string,
+    { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }
+  > = {
     PENDING: { label: "Pending", variant: "secondary", icon: <Clock className="size-3" /> },
     PROCESSING: { label: "Processing", variant: "outline", icon: <Loader2 className="size-3 animate-spin" /> },
     COMPLETED: { label: "Completed", variant: "default", icon: <CheckCircle2 className="size-3" /> },
     FAILED: { label: "Failed", variant: "destructive", icon: <XCircle className="size-3" /> },
     TEMP: { label: "Temp", variant: "secondary", icon: <Clock className="size-3" /> },
+    error: { label: "Error", variant: "destructive", icon: <AlertCircle className="size-3" /> },
+    warn: { label: "Warning", variant: "outline", icon: <AlertCircle className="size-3" /> },
+    info: { label: "Info", variant: "secondary", icon: <AlertCircle className="size-3" /> },
   }
   const cfg = map[status] ?? map.PENDING
   return (
@@ -171,154 +167,223 @@ function statusBadge(status: TaskStatus | MigrationStatus) {
 // ==============================================================================
 
 export default function AdminDashboardPage() {
-  const stats = mockStats
+  const [data, setData] = React.useState<DashboardData | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [range, setRange] = React.useState<"7d" | "30d" | "90d">("7d")
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      const res = await fetch(`/api/admin/dashboard?range=${range}`, {
+        cache: "no-store",
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Gagal memuat data")
+      }
+
+      const json = await res.json()
+      setData(json)
+    } catch (error) {
+      console.error("Fetch dashboard error:", error)
+      toast.error(error instanceof Error ? error.message : "Gagal memuat dashboard")
+    } finally {
+      setLoading(false)
+    }
+  }, [range])
+
+  React.useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // ==========================================
+  // LOADING STATE
+  // ==========================================
+  if (loading && !data) {
+    return (
+      <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-7 w-40 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-64 animate-pulse rounded bg-muted" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-32 animate-pulse rounded-lg bg-muted" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-6">
+        <div className="text-center">
+          <AlertCircle className="mx-auto mb-3 size-10 text-destructive" />
+          <p className="text-sm text-muted-foreground">Gagal memuat dashboard</p>
+          <Button className="mt-4" onClick={fetchData}>
+            <RefreshCw className="size-4" />
+            Coba Lagi
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
       {/* ================= HEADER ================= */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
-            Overview of users, files, tasks, and system health
+            Ringkasan platform berdasarkan database
           </p>
         </div>
-        <Button render={<Link href="/admin/analytics" />}>
-          <TrendingUp className="size-4" />
-          View Analytics
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Range Selector */}
+          <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
+            {(["7d", "30d", "90d"] as const).map((r) => (
+              <Button
+                key={r}
+                variant={range === r ? "default" : "ghost"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setRange(r)}
+              >
+                {r === "7d" ? "7 Hari" : r === "30d" ? "30 Hari" : "90 Hari"}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+          >
+            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <Separator />
 
-      {/* ================= SECTION 1: USERS (model User) ================= */}
+      {/* ================= SECTION 1: USERS ================= */}
       <section>
-        <div className="mb-3 flex items-center gap-2">
-          <Users className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Users
-          </h2>
-        </div>
+        <SectionHeader icon={<Users className="size-4" />} title="Users" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Users"
-            value={stats.totalUsers.toLocaleString()}
+            value={data.totalUsers.toLocaleString()}
             description="Semua role & plan"
             icon={<Users className="size-4" />}
           />
           <StatCard
             title="Admins"
-            value={stats.adminUsers.toLocaleString()}
+            value={data.totalAdmins.toLocaleString()}
             description="role = ADMIN"
             icon={<Users className="size-4" />}
           />
           <StatCard
             title="Premium"
-            value={stats.premiumUsers.toLocaleString()}
+            value={data.totalPremiumUsers.toLocaleString()}
             description="plan = PREMIUM"
             icon={<TrendingUp className="size-4" />}
           />
           <StatCard
             title="Free"
-            value={stats.freeUsers.toLocaleString()}
+            value={data.totalFreeUsers.toLocaleString()}
             description="plan = FREE"
             icon={<Users className="size-4" />}
           />
         </div>
       </section>
 
-      {/* ================= SECTION 2: FILES (model File) ================= */}
+      {/* ================= SECTION 2: FILES ================= */}
       <section>
-        <div className="mb-3 flex items-center gap-2">
-          <Folder className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Files & Storage
-          </h2>
-        </div>
+        <SectionHeader icon={<Folder className="size-4" />} title="Files & Storage" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Files"
-            value={stats.totalFiles.toLocaleString()}
-            description={`Total: ${formatBytes(stats.totalSizeBytes)}`}
+            value={data.totalFiles.toLocaleString()}
+            description={`Total: ${formatBytes(data.totalSizeBytes)}`}
             icon={<Folder className="size-4" />}
           />
           <StatCard
             title="Supabase"
-            value={stats.supabaseFiles.toLocaleString()}
+            value={data.supabaseFiles.toLocaleString()}
             description="storageProvider = SUPABASE"
             icon={<HardDrive className="size-4" />}
           />
           <StatCard
             title="Google Drive"
-            value={stats.driveFiles.toLocaleString()}
+            value={data.driveFiles.toLocaleString()}
             description="storageProvider = GOOGLE_DRIVE"
             icon={<CloudUpload className="size-4" />}
           />
           <StatCard
             title="Expired"
-            value={stats.expiredFiles.toLocaleString()}
+            value={data.expiredFiles.toLocaleString()}
             description="expiresAt < now()"
             icon={<Clock className="size-4" />}
             variant="warning"
           />
         </div>
 
-        {/* Migration Status Breakdown */}
         <Card className="mt-4">
           <CardHeader>
             <CardTitle className="text-base">Migration Status</CardTitle>
             <CardDescription>
-              Monitoring perpindahan file dari Supabase ke Google Drive
+              Perpindahan file dari Supabase ke Google Drive
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
-              <StatusRow label="TEMP" value={stats.tempFiles} status="TEMP" />
-              <StatusRow label="PROCESSING" value={stats.processingMigration} status="PROCESSING" />
-              <StatusRow label="COMPLETED" value={stats.completedMigration} status="COMPLETED" />
-              <StatusRow label="FAILED" value={stats.failedMigration} status="FAILED" />
+              <StatusRow label="TEMP" value={data.tempFiles} status="TEMP" />
+              <StatusRow label="PROCESSING" value={data.processingMigration} status="PROCESSING" />
+              <StatusRow label="COMPLETED" value={data.completedMigration} status="COMPLETED" />
+              <StatusRow label="FAILED" value={data.failedMigration} status="FAILED" />
             </div>
           </CardContent>
         </Card>
       </section>
 
-      {/* ================= SECTION 3: DOCUMENT TASKS (model DocumentTask) ================= */}
+      {/* ================= SECTION 3: DOCUMENT TASKS ================= */}
       <section>
-        <div className="mb-3 flex items-center gap-2">
-          <ListChecks className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Document Tasks
-          </h2>
-        </div>
+        <SectionHeader icon={<ListChecks className="size-4" />} title="Document Tasks" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Total Tasks"
-            value={stats.totalTasks.toLocaleString()}
+            value={data.totalTasks.toLocaleString()}
             description="Semua ToolType"
             icon={<ListChecks className="size-4" />}
           />
           <StatCard
             title="Pending"
-            value={stats.pendingTasks.toLocaleString()}
+            value={data.pendingTasks.toLocaleString()}
             description="status = PENDING"
             icon={<Clock className="size-4" />}
           />
           <StatCard
             title="Processing"
-            value={stats.processingTasks.toLocaleString()}
+            value={data.processingTasks.toLocaleString()}
             description="status = PROCESSING"
             icon={<Loader2 className="size-4 animate-spin" />}
           />
           <StatCard
             title="Completed"
-            value={stats.completedTasks.toLocaleString()}
+            value={data.completedTasks.toLocaleString()}
             description="status = COMPLETED"
             icon={<CheckCircle2 className="size-4" />}
             variant="success"
           />
           <StatCard
             title="Failed"
-            value={stats.failedTasks.toLocaleString()}
+            value={data.failedTasks.toLocaleString()}
             description="status = FAILED"
             icon={<XCircle className="size-4" />}
             variant="destructive"
@@ -326,14 +391,78 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      {/* ================= SECTION 4: RECENT TASKS + TOOL MENUS ================= */}
+      {/* ================= SECTION 4: CHART ================= */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Pertumbuhan</CardTitle>
+          <CardDescription>
+            Users, Files, dan Tasks {range === "7d" ? "7" : range === "30d" ? "30" : "90"} hari terakhir
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.chartData}>
+                <defs>
+                  <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorFiles" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ec4899" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ec4899" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="users"
+                  stroke="#3b82f6"
+                  fill="url(#colorUsers)"
+                  name="Users"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="files"
+                  stroke="#10b981"
+                  fill="url(#colorFiles)"
+                  name="Files"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="tasks"
+                  stroke="#ec4899"
+                  fill="url(#colorTasks)"
+                  name="Tasks"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ================= SECTION 5: RECENT DATA ================= */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Recent Tasks */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle className="text-base">Recent Tasks</CardTitle>
-              <CardDescription>5 task terbaru dari DocumentTask</CardDescription>
+              <CardDescription>5 task terbaru</CardDescription>
             </div>
             <Button variant="ghost" size="sm" render={<Link href="/admin/tasks" />}>
               View All
@@ -341,99 +470,176 @@ export default function AdminDashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="size-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">{task.toolType}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {task.user} · {task.createdAt}
-                      </p>
+            {data.recentTasks.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Belum ada task
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {data.recentTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <FileText className="size-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {task.toolType}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {task.user?.email ?? "—"} ·{" "}
+                          {formatDistanceToNow(new Date(task.createdAt), {
+                            addSuffix: true,
+                            locale: localeId,
+                          })}
+                        </p>
+                      </div>
                     </div>
+                    {statusBadge(task.status)}
                   </div>
-                  {statusBadge(task.status)}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Tool Categories */}
+        {/* Recent Users */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
-              <CardTitle className="text-base">Tool Categories</CardTitle>
-              <CardDescription>
-                {stats.totalCategories} kategori · {stats.activeMenus}/{stats.totalMenus} menu aktif
-              </CardDescription>
+              <CardTitle className="text-base">Recent Users</CardTitle>
+              <CardDescription>5 user terbaru</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" render={<Link href="/admin/tool-menus/categories" />}>
-              Manage
+            <Button variant="ghost" size="sm" render={<Link href="/admin/users" />}>
+              View All
               <ArrowRight className="size-4" />
             </Button>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {toolCategories.map((cat) => (
-                <div
-                  key={cat.slug}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <LayoutGrid className="size-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">{cat.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        /{cat.slug} · {cat.menuCount} menus
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant={cat.isActive ? "default" : "secondary"}>
-                    {cat.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+          <CardContent className="p-0">
+            {data.recentUsers.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Belum ada user
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-right">Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.recentUsers.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="size-7">
+                            <AvatarImage src={u.image ?? ""} alt={u.name ?? ""} />
+                            <AvatarFallback className="text-xs">
+                              {u.name?.charAt(0).toUpperCase() ?? "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {u.name ?? "—"}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {u.email ?? "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={u.role === "ADMIN" ? "default" : "secondary"}
+                        >
+                          {u.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {format(new Date(u.createdAt), "dd MMM", {
+                          locale: localeId,
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* ================= SECTION 5: SYSTEM (model SystemLog) ================= */}
-      <section>
-        <div className="mb-3 flex items-center gap-2">
-          <Database className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            System
-          </h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard
-            title="Total Logs"
-            value={stats.totalLogs.toLocaleString()}
-            description="SystemLog entries"
-            icon={<Database className="size-4" />}
-          />
-          <StatCard
-            title="Error Logs"
-            value={stats.errorLogs.toLocaleString()}
-            description="level = error"
-            icon={<XCircle className="size-4" />}
-            variant="destructive"
-          />
-          <StatCard
-            title="System Health"
-            value="99.9%"
-            description="Uptime 30 hari terakhir"
-            icon={<CheckCircle2 className="size-4" />}
-            variant="success"
-          />
-        </div>
-      </section>
+      {/* ================= SECTION 6: TOOL MENUS + SYSTEM ================= */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <StatCard
+          title="Tool Categories"
+          value={data.totalCategories.toLocaleString()}
+          description={`${data.activeMenus}/${data.totalMenus} menu aktif`}
+          icon={<LayoutGrid className="size-4" />}
+        />
+        <StatCard
+          title="System Logs"
+          value={data.totalLogs.toLocaleString()}
+          description="Semua entry SystemLog"
+          icon={<Database className="size-4" />}
+        />
+        <StatCard
+          title="Error Logs"
+          value={data.errorLogs.toLocaleString()}
+          description='level = "error"'
+          icon={<XCircle className="size-4" />}
+          variant="destructive"
+        />
+      </div>
+
+      {/* ================= SECTION 7: RECENT LOGS ================= */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base">Recent System Logs</CardTitle>
+            <CardDescription>8 log terbaru</CardDescription>
+          </div>
+          <Button variant="ghost" size="sm" render={<Link href="/admin/system/logs" />}>
+            View All
+            <ArrowRight className="size-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {data.recentLogs.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Belum ada log
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {data.recentLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {statusBadge(log.level)}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{log.action}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {log.message}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(log.createdAt), {
+                      addSuffix: true,
+                      locale: localeId,
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -441,6 +647,23 @@ export default function AdminDashboardPage() {
 // ==============================================================================
 // SUB-COMPONENTS
 // ==============================================================================
+
+function SectionHeader({
+  icon,
+  title,
+}: {
+  icon: React.ReactNode
+  title: string
+}) {
+  return (
+    <div className="mb-3 flex items-center gap-2">
+      <span className="text-muted-foreground">{icon}</span>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </h2>
+    </div>
+  )
+}
 
 function StatCard({
   title,
@@ -483,13 +706,11 @@ function StatusRow({
 }: {
   label: string
   value: number
-  status: TaskStatus | MigrationStatus
+  status: string
 }) {
   return (
     <div className="flex items-center justify-between rounded-lg border p-3">
-      <div className="flex items-center gap-2">
-        {statusBadge(status)}
-      </div>
+      <div className="flex items-center gap-2">{statusBadge(status)}</div>
       <span className="text-sm font-semibold">{value.toLocaleString()}</span>
     </div>
   )

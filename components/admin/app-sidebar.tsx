@@ -18,39 +18,33 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
-  TerminalIcon,
-  BookOpenIcon,
-  GearIcon,
-  LifebuoyIcon,
-  PaperPlaneTiltIcon,
+  SquaresFourIcon,
   UsersIcon,
-  DatabaseIcon,
   FolderIcon,
   ListChecksIcon,
-  SquaresFourIcon,
-  CloudArrowUpIcon,
+  GearIcon,
+  LifebuoyIcon,
+  BookOpenIcon,
   ClockCounterClockwiseIcon,
+  CloudArrowUpIcon,
+  WarningCircleIcon,
+  StackIcon,
 } from "@phosphor-icons/react";
 
 const data = {
   navMain: [
     // ==========================================
-    // 1. DASHBOARD
+    // 🏠 DASHBOARD
     // ==========================================
     {
       title: "Dashboard",
       url: "/admin/dashboard",
-      icon: <TerminalIcon />,
+      icon: <SquaresFourIcon />,
       isActive: true,
-      items: [
-        { title: "Overview", url: "/admin/dashboard" },
-        { title: "Analytics", url: "/admin/analytics" },
-        { title: "Revenue", url: "/admin/analytics/revenue" },
-      ],
     },
 
     // ==========================================
-    // 2. USERS (model: User, Account, Session)
+    // 👥 USERS → model: User, Account, Session
     // ==========================================
     {
       title: "Users",
@@ -60,33 +54,28 @@ const data = {
         {
           title: "All Users",
           url: "/admin/users",
-          description: "Manage user accounts (role, plan, quota)",
+          description: "Semua user terdaftar",
         },
         {
           title: "Admins",
-          url: "/admin/users/admins",
-          description: "Filter by role ADMIN",
+          url: "/admin/users?role=ADMIN",
+          description: "User dengan role ADMIN",
         },
         {
-          title: "Premium Users",
-          url: "/admin/users/premium",
-          description: "Filter by plan PREMIUM",
+          title: "Premium",
+          url: "/admin/users?plan=PREMIUM",
+          description: "User dengan plan PREMIUM",
         },
         {
-          title: "User Quota",
+          title: "Quota & Activity",
           url: "/admin/users/quota",
-          description: "Monitor usedBytes & taskCount",
-        },
-        {
-          title: "User Activity",
-          url: "/admin/users/activity",
-          description: "Login sessions & account activity",
+          description: "usedBytes, taskCount & sessions",
         },
       ],
     },
 
     // ==========================================
-    // 3. FILES (model: File)
+    // 📁 FILES → model: File
     // ==========================================
     {
       title: "Files",
@@ -96,38 +85,28 @@ const data = {
         {
           title: "All Files",
           url: "/admin/files",
-          description: "Manage uploaded & generated files",
+          description: "Semua file di sistem",
         },
         {
-          title: "Supabase Storage",
-          url: "/admin/files/storage/supabase",
-          description: "Filter storageProvider SUPABASE",
-        },
-        {
-          title: "Google Drive",
-          url: "/admin/files/storage/drive",
-          description: "Filter storageProvider GOOGLE_DRIVE",
+          title: "By Storage",
+          url: "/admin/files/storage",
+          description: "Supabase vs Google Drive",
         },
         {
           title: "Migration Queue",
           url: "/admin/files/migration",
-          description: "Monitor migrationStatus (TEMP→PROCESSING→COMPLETED)",
+          description: "TEMP → PROCESSING → COMPLETED",
         },
         {
           title: "Expired Files",
           url: "/admin/files/expired",
-          description: "Files past expiresAt for cleanup",
-        },
-        {
-          title: "Storage Stats",
-          url: "/admin/files/stats",
-          description: "Total size, per-provider breakdown",
+          description: "File melewati expiresAt",
         },
       ],
     },
 
     // ==========================================
-    // 4. DOCUMENT TASKS (model: DocumentTask)
+    // 📝 DOCUMENT TASKS → model: DocumentTask
     // ==========================================
     {
       title: "Document Tasks",
@@ -137,120 +116,95 @@ const data = {
         {
           title: "All Tasks",
           url: "/admin/tasks",
-          description: "Monitor all conversion tasks",
+          description: "Semua task konversi",
         },
         {
           title: "Pending",
           url: "/admin/tasks?status=PENDING",
-          description: "Tasks waiting to be processed",
+          description: "Menunggu diproses",
         },
         {
           title: "Processing",
           url: "/admin/tasks?status=PROCESSING",
-          description: "Tasks currently running",
+          description: "Sedang diproses",
         },
         {
           title: "Completed",
           url: "/admin/tasks?status=COMPLETED",
-          description: "Successfully finished tasks",
+          description: "Berhasil diselesaikan",
         },
         {
           title: "Failed",
           url: "/admin/tasks?status=FAILED",
-          description: "Tasks with errorMessage",
+          description: "Gagal — lihat errorMessage",
         },
         {
           title: "By Tool Type",
           url: "/admin/tasks/by-tool",
-          description: "Group by ToolType (21 tools)",
-        },
-        {
-          title: "Task Inputs",
-          url: "/admin/tasks/inputs",
-          description: "Manage TaskInputFile relations",
-        },
-        {
-          title: "Task Outputs",
-          url: "/admin/tasks/outputs",
-          description: "Manage TaskOutputFile relations",
+          description: "Kelompokkan per ToolType",
         },
       ],
     },
 
     // ==========================================
-    // 5. TOOL MENUS (model: ToolCategory, ToolMenu)
+    // 🎛️ TOOL MENUS → model: ToolCategory, ToolMenu
     // ==========================================
     {
       title: "Tool Menus",
       url: "#",
-      icon: <SquaresFourIcon />,
+      icon: <StackIcon />,
       items: [
         {
           title: "Categories",
           url: "/admin/tool-menus/categories",
-          description: "Manage ToolCategory (name, slug, order)",
+          description: "Kelola ToolCategory",
         },
         {
           title: "All Menus",
           url: "/admin/tool-menus",
-          description: "Manage ToolMenu (title, href, icon)",
+          description: "Kelola ToolMenu",
         },
         {
-          title: "Menu Ordering",
+          title: "Ordering",
           url: "/admin/tool-menus/ordering",
-          description: "Drag & drop sort by order field",
-        },
-        {
-          title: "Active/Inactive",
-          url: "/admin/tool-menus/visibility",
-          description: "Toggle isActive flag",
+          description: "Atur urutan drag & drop",
         },
         {
           title: "Tool Type Mapping",
           url: "/admin/tool-menus/tool-type",
-          description: "Link ToolMenu to ToolType enum",
+          description: "Hubungkan ke ToolType enum",
         },
       ],
     },
 
     // ==========================================
-    // 6. SYSTEM (model: SystemLog)
+    // 📜 SYSTEM → model: SystemLog
     // ==========================================
     {
       title: "System",
       url: "#",
-      icon: <DatabaseIcon />,
+      icon: <ClockCounterClockwiseIcon />,
       items: [
         {
-          title: "System Logs",
+          title: "All Logs",
           url: "/admin/system/logs",
-          description: "View SystemLog (level, action, message)",
+          description: "Semua aktivitas sistem",
         },
         {
-          title: "Error Logs",
+          title: "Errors Only",
           url: "/admin/system/logs?level=error",
-          description: "Filter by level=error",
+          description: "Filter level = error",
         },
         {
           title: "Database Status",
           url: "/admin/system/database",
-          description: "Database health & metrics",
-        },
-        {
-          title: "Cron Jobs",
-          url: "/admin/system/cron",
-          description: "Scheduled tasks (file migration, cleanup)",
-        },
-        {
-          title: "Queue Monitor",
-          url: "/admin/system/queue",
-          description: "BullMQ / task queue status",
+          description: "Kesehatan & koneksi DB",
         },
       ],
     },
 
     // ==========================================
-    // 7. SETTINGS
+    // ⚙️ SETTINGS → Konfigurasi aplikasi
     // ==========================================
     {
       title: "Settings",
@@ -260,59 +214,29 @@ const data = {
         {
           title: "General",
           url: "/admin/settings/general",
+          description: "Pengaturan umum",
         },
         {
           title: "Storage",
           url: "/admin/settings/storage",
-          description: "Supabase & Google Drive credentials",
+          description: "Supabase & Google Drive",
         },
         {
           title: "File Retention",
           url: "/admin/settings/retention",
-          description: "Default expiresAt & cleanup policy",
+          description: "Kebijakan expiresAt",
         },
         {
-          title: "Tool Types",
-          url: "/admin/settings/tool-types",
-          description: "Enable/disable 21 ToolType enum",
-        },
-        {
-          title: "Ad Settings",
-          url: "/admin/settings/ads",
-          description: "Google AdSense configuration",
-        },
-        {
-          title: "Plan & Pricing",
+          title: "Plans & Pricing",
           url: "/admin/settings/plans",
-          description: "FREE vs PREMIUM limits",
+          description: "Limit FREE vs PREMIUM",
         },
       ],
     },
   ],
 
   // ==========================================
-  // NAV SECONDARY (Shortcut)
-  // ==========================================
-  navSecondary: [
-    {
-      title: "Documentation",
-      url: "/admin/docs",
-      icon: <BookOpenIcon />,
-    },
-    {
-      title: "Support",
-      url: "/admin/support",
-      icon: <LifebuoyIcon />,
-    },
-    {
-      title: "Feedback",
-      url: "/admin/feedback",
-      icon: <PaperPlaneTiltIcon />,
-    },
-  ],
-
-  // ==========================================
-  // PROJECTS (Quick Access)
+  // 🔗 QUICK ACCESS (Shortcut ke menu penting)
   // ==========================================
   projects: [
     {
@@ -326,19 +250,30 @@ const data = {
       icon: <ListChecksIcon />,
     },
     {
-      name: "Google Drive Sync",
+      name: "Drive Sync",
       url: "/admin/files/storage/drive",
       icon: <CloudArrowUpIcon />,
     },
     {
-      name: "Tool Categories",
-      url: "/admin/tool-menus/categories",
-      icon: <SquaresFourIcon />,
+      name: "Error Logs",
+      url: "/admin/system/logs?level=error",
+      icon: <WarningCircleIcon />,
+    },
+  ],
+
+  // ==========================================
+  // 🆘 SECONDARY (Bantuan)
+  // ==========================================
+  navSecondary: [
+    {
+      title: "Documentation",
+      url: "/admin/docs",
+      icon: <BookOpenIcon />,
     },
     {
-      name: "System Logs",
-      url: "/admin/system/logs",
-      icon: <ClockCounterClockwiseIcon />,
+      title: "Support",
+      url: "/admin/support",
+      icon: <LifebuoyIcon />,
     },
   ],
 
@@ -358,23 +293,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <Link href="/admin/dashboard" className="block w-full">
               <SidebarMenuButton size="lg" className="w-full">
                 <div className="flex items-center justify-center w-full overflow-hidden">
-                  {/* Logo untuk Light Mode */}
                   <Image
                     src="/image/Logo Beres.png"
-                    alt="DocTools Logo Light"
+                    alt="Beres Admin Logo"
                     width={130}
                     height={35}
                     priority
-                    className="h-7 w-auto object-contain dark:hidden block"
-                  />
-                  {/* Logo untuk Dark Mode */}
-                  <Image
-                    src="/image/Logo Beres.png"
-                    alt="DocTools Logo Dark"
-                    width={130}
-                    height={35}
-                    priority
-                    className="h-7 w-auto object-contain hidden dark:block"
+                    className="h-7 w-auto object-contain"
                   />
                 </div>
               </SidebarMenuButton>
