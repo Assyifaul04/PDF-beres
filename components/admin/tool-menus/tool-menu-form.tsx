@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FloppyDiskIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import { IconPicker } from "@/components/admin/tool-menus/icon-picker";
+import { findIcon } from "@/lib/tool-icons";
 
 const TOOL_TYPES = [
   "MERGE_PDF",
@@ -78,7 +81,6 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
     toolType: initialData?.toolType ?? null,
   });
 
-  // Auto-generate slug dari title saat create
   function handleTitleChange(value: string) {
     setForm((prev) => ({
       ...prev,
@@ -130,6 +132,8 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
     });
   }
 
+  const selectedIcon = findIcon(form.icon);
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {error && (
@@ -140,12 +144,12 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Info */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Informasi Menu</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Kategori */}
             <div className="space-y-2">
               <Label htmlFor="categoryId">
                 Kategori <span className="text-destructive">*</span>
@@ -169,6 +173,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               </Select>
             </div>
 
+            {/* Judul */}
             <div className="space-y-2">
               <Label htmlFor="title">
                 Judul <span className="text-destructive">*</span>
@@ -182,6 +187,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               />
             </div>
 
+            {/* Slug */}
             <div className="space-y-2">
               <Label htmlFor="slug">
                 Slug <span className="text-destructive">*</span>
@@ -201,6 +207,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               </p>
             </div>
 
+            {/* Deskripsi */}
             <div className="space-y-2">
               <Label htmlFor="description">Deskripsi</Label>
               <Textarea
@@ -214,6 +221,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               />
             </div>
 
+            {/* Href */}
             <div className="space-y-2">
               <Label htmlFor="href">
                 Href <span className="text-destructive">*</span>
@@ -230,20 +238,46 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               />
             </div>
 
+            {/* ✅ ICON PICKER — ganti dari Input text */}
             <div className="space-y-2">
-              <Label htmlFor="icon">Icon Path</Label>
-              <Input
-                id="icon"
+              <Label htmlFor="icon">Icon</Label>
+              <IconPicker
                 value={form.icon}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, icon: e.target.value }))
-                }
-                placeholder="/image/icons/word.png"
-                className="font-mono text-sm"
+                onChange={(v) => setForm((p) => ({ ...p, icon: v }))}
+                placeholder="Pilih icon..."
               />
               <p className="text-xs text-muted-foreground">
-                Path ke file icon (opsional)
+                Pilih icon dari daftar (opsional)
               </p>
+
+              {/* Preview besar + tombol clear */}
+              {selectedIcon && (
+                <div className="mt-2 flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+                  <Image
+                    src={selectedIcon.value}
+                    alt={selectedIcon.label}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 shrink-0 object-contain"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {selectedIcon.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono truncate">
+                      {selectedIcon.value}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setForm((p) => ({ ...p, icon: "" }))}
+                  >
+                    Hapus
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -332,7 +366,6 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex justify-end gap-2">
         <Button
           type="button"

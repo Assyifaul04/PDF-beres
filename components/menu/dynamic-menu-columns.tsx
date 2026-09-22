@@ -8,8 +8,8 @@ import type { MenuColumnData } from "@/lib/queries/tool-menus";
 interface Props {
   columns: MenuColumnData[];
   /** Kolom per baris — default 2 */
-  gridCols?: 1 | 2 | 3;
-  /** Mode mobile: 1 kolom, tanpa min-width */
+  gridCols?: 1 | 2 | 3 | 4 | 5;
+  /** Mode mobile: 1 kolom, tanpa padding ekstra */
   mobile?: boolean;
 }
 
@@ -26,26 +26,27 @@ export function DynamicMenuColumns({
     );
   }
 
-  // ✅ Mobile: paksa 1 kolom, tanpa min-width
+  // ✅ Responsive grid class per jumlah kolom
+  // Format: [base] [sm] [md] [lg] [xl]
+  const gridClassMap: Record<number, string> = {
+    1: "grid-cols-1",
+    2: "grid-cols-1 sm:grid-cols-2",
+    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+    5: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+  };
+
   const gridClass = mobile
     ? "grid-cols-1"
-    : {
-        1: "grid-cols-1 sm:min-w-[280px]",
-        2: "grid-cols-1 sm:grid-cols-2 sm:min-w-[560px]",
-        3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 sm:min-w-[560px] lg:min-w-[840px]",
-      }[gridCols];
+    : gridClassMap[gridCols] ?? gridClassMap[2];
 
   return (
-    <div
-      className={`grid ${gridClass} ${
-        mobile ? "gap-2" : "gap-6 p-4"
-      }`}
-    >
+    <div className={`grid ${gridClass} ${mobile ? "gap-2" : "gap-5"}`}>
       {columns.map((col) => (
-        <div key={col.id}>
+        <div key={col.id} className="min-w-0">
           <h3
             className={`font-bold uppercase tracking-wider text-muted-foreground ${
-              mobile ? "mb-1.5 px-1 text-[10px]" : "mb-3 text-xs"
+              mobile ? "mb-1.5 px-1 text-[10px]" : "mb-2 text-[11px]"
             }`}
           >
             {col.title}
@@ -61,20 +62,18 @@ export function DynamicMenuColumns({
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-md text-sm font-semibold text-foreground transition-colors hover:bg-muted ${
-                      mobile ? "px-2 py-2" : "px-2 py-2"
-                    }`}
+                    className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                   >
                     {item.icon ? (
                       <Image
                         src={item.icon}
                         alt=""
-                        width={24}
-                        height={24}
-                        className="h-5 w-5 shrink-0 object-contain sm:h-6 sm:w-6"
+                        width={20}
+                        height={20}
+                        className="h-5 w-5 shrink-0 object-contain"
                       />
                     ) : (
-                      <span className="h-5 w-5 shrink-0 rounded bg-muted sm:h-6 sm:w-6" />
+                      <span className="h-5 w-5 shrink-0 rounded bg-muted" />
                     )}
                     <span className="truncate">{item.label}</span>
                   </Link>

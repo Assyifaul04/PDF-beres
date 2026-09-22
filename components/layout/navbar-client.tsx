@@ -34,71 +34,78 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link href="/" aria-label="Beres — Home" className="flex items-center">
-          <Image
-            src="/image/Logo Beres.png"
-            alt="Beres"
-            width={140}
-            height={60}
-            priority
-            className="h-8 w-auto object-contain sm:h-9"
-          />
-        </Link>
+        {/* ✅ KIRI: Logo + Menu dalam satu grup */}
+        <div className="flex items-center gap-6 lg:gap-8">
+          {/* Logo */}
+          <Link
+            href="/"
+            aria-label="Beres — Home"
+            className="flex shrink-0 items-center"
+          >
+            <Image
+              src="/image/Logo Beres.png"
+              alt="Beres"
+              width={140}
+              height={60}
+              priority
+              className="h-8 w-auto object-contain sm:h-9"
+            />
+          </Link>
 
-        {/* Desktop links */}
-        <ul className="hidden items-center gap-6 md:flex">
-          <li>
-            <Link
-              href="/combine-pdf"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Combine PDF
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/separate-pdf"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Separate PDF
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/compress-pdf"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Compress PDF
-            </Link>
-          </li>
+          {/* Desktop links — tepat di samping logo */}
+          <ul className="hidden items-center gap-6 md:flex">
+            <li>
+              <Link
+                href="/combine-pdf"
+                className="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Combine PDF
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/separate-pdf"
+                className="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Separate PDF
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/compress-pdf"
+                className="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Compress PDF
+              </Link>
+            </li>
 
-          <li>
-            {/* Dibuat terpusat (align="center") dengan lebar sedang seperti referensi "Konversi PDF" */}
-            <NavDropdown 
-              label="PDF Conversion" 
-              href="/convert-pdf" 
-              align="center"
-              panelClassName="w-[450px] p-4"
-            >
-              <DynamicMenuColumns columns={pdfColumns} gridCols={2} />
-            </NavDropdown>
-          </li>
+            {/* PDF Conversion — center ke trigger */}
+            <li>
+              <NavDropdown
+                label="PDF Conversion"
+                href="/convert-pdf"
+                align="center"
+                panelClassName="w-[450px] p-5"
+              >
+                <DynamicMenuColumns columns={pdfColumns} gridCols={2} />
+              </NavDropdown>
+            </li>
 
-          <li>
-            {/* Dibuat rata kanan (align="end") dengan lebar besar menyerupai "Semua Alat PDF" */}
-            <NavDropdown 
-              label="All PDF Tools" 
-              href="/tools" 
-              align="end"
-              panelClassName="w-[750px] xl:w-[850px] p-6"
-            >
-              <DynamicMenuColumns columns={allToolColumns} gridCols={3} />
-            </NavDropdown>
-          </li>
-        </ul>
+            {/* All PDF Tools — panel center viewport, arrow ke trigger */}
+            <li>
+              <NavDropdown
+                label="All PDF Tools"
+                href="/tools"
+                align="viewport-center"
+                panelClassName="w-[1100px] max-w-[calc(100vw-2rem)] p-6"
+              >
+                <DynamicMenuColumns columns={allToolColumns} gridCols={5} />
+              </NavDropdown>
+            </li>
+          </ul>
+        </div>
 
-        {/* CTA + Theme toggle */}
+        {/* ✅ KANAN: CTA + Theme toggle */}
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
           {isLoggedIn ? (
@@ -107,13 +114,13 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
             <>
               <Link
                 href="/login"
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="whitespace-nowrap text-sm text-muted-foreground hover:text-foreground"
               >
                 Sign in
               </Link>
               <Link
                 href="/signup"
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                className="whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
               >
                 Get Started
               </Link>
@@ -137,7 +144,7 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
           "overflow-y-auto border-t transition-all md:hidden",
           open
             ? "max-h-[calc(100vh-4rem)] border-border"
-            : "max-h-0 border-transparent"
+            : "max-h-0 border-transparent",
         )}
       >
         <div className="flex items-center justify-between px-4 pt-4">
@@ -177,26 +184,17 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
           </li>
 
           <NavDropdownMobile label="PDF Conversion">
-            <DynamicMenuColumns
-              columns={pdfColumns}
-              gridCols={1}
-              mobile
-            />
+            <DynamicMenuColumns columns={pdfColumns} gridCols={1} mobile />
           </NavDropdownMobile>
 
           <NavDropdownMobile label="All PDF Tools">
-            <DynamicMenuColumns
-              columns={allToolColumns}
-              gridCols={1}
-              mobile
-            />
+            <DynamicMenuColumns columns={allToolColumns} gridCols={1} mobile />
           </NavDropdownMobile>
         </ul>
 
         {/* Mobile auth section */}
         <div className="border-t px-4 py-4">
           {isLoggedIn ? (
-             // ... kode auth mobile Anda tetap sama ...
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {session.user?.image ? (
@@ -224,7 +222,6 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
               <UserMenu user={session.user!} />
             </div>
           ) : (
-             // ... kode auth mobile Anda tetap sama ...
             <div className="flex flex-col gap-2">
               <Link
                 href="/login"

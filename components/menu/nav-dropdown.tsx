@@ -1,4 +1,3 @@
-// components/menu/nav-dropdown.tsx
 "use client";
 
 import * as React from "react";
@@ -8,7 +7,8 @@ type NavDropdownProps = {
   label: string;
   href: string;
   children: React.ReactNode;
-  align?: "start" | "center" | "end";
+  /** Posisi panel: start = kiri trigger, end = kanan trigger, viewport-center = center viewport */
+  align?: "start" | "center" | "end" | "viewport-center";
   panelClassName?: string;
 };
 
@@ -24,6 +24,7 @@ export function NavDropdown({
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
   const [arrowLeft, setArrowLeft] = React.useState<number | null>(null);
+  const [panelStyle, setPanelStyle] = React.useState<React.CSSProperties>({});
 
   // Close on click outside
   React.useEffect(() => {
@@ -47,23 +48,69 @@ export function NavDropdown({
     }
   }, [open]);
 
-  // Hitung posisi arrow
+  // ✅ Hitung posisi panel + arrow
   React.useEffect(() => {
     if (!open || !triggerRef.current || !panelRef.current) return;
 
-    const trigger = triggerRef.current.getBoundingClientRect();
-    const panel = panelRef.current.getBoundingClientRect();
+    const compute = () => {
+      if (!triggerRef.current || !panelRef.current) return;
 
-    const triggerCenter = trigger.left + trigger.width / 2;
-    const offset = triggerCenter - panel.left;
+      const trigger = triggerRef.current.getBoundingClientRect();
+      const panel = panelRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const margin = 16;
 
-    setArrowLeft(offset);
-  }, [open]);
+      let panelLeft: number;
 
+      if (align === "viewport-center") {
+        // ✅ Panel SELALU center viewport
+        panelLeft = (viewportWidth - panel.width) / 2;
+        // Clamp kalau viewport lebih sempit dari panel
+        panelLeft = Math.max(margin, Math.min(panelLeft, viewportWidth - panel.width - margin));
+      } else if (align === "center") {
+        // Center ke trigger
+        panelLeft = trigger.left + trigger.width / 2 - panel.width / 2;
+        panelLeft = Math.max(margin, Math.min(panelLeft, viewportWidth - panel.width - margin));
+      } else if (align === "end") {
+        // Kanan trigger
+        panelLeft = trigger.right - panel.width;
+        panelLeft = Math.max(margin, Math.min(panelLeft, viewportWidth - panel.width - margin));
+      } else {
+        // start: kiri trigger
+        panelLeft = trigger.left;
+        panelLeft = Math.max(margin, Math.min(panelLeft, viewportWidth - panel.width - margin));
+      }
+
+      // Posisi panel relatif ke wrapper (yang `position: relative`)
+      const wrapper = ref.current?.getBoundingClientRect();
+      const wrapperLeft = wrapper?.left ?? 0;
+      const offsetLeft = panelLeft - wrapperLeft;
+
+      // ✅ Simpan style untuk panel wrapper
+      setPanelStyle({
+        left: `${offsetLeft}px`,
+        transform: "none", // reset transform default dari alignClass
+      });
+
+      // ✅ Hitung arrow: posisi trigger center, relatif ke panel
+      const triggerCenter = trigger.left + trigger.width / 2;
+      const arrowRelative = triggerCenter - panelLeft;
+      // Clamp agar arrow tidak keluar panel
+      const clampedArrow = Math.max(16, Math.min(arrowRelative, panel.width - 16));
+      setArrowLeft(clampedArrow);
+    };
+
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, [open, align]);
+
+  // Class default jika align belum dihitung (sebelum panel terbuka)
   const alignClass = {
     start: "left-0",
     center: "left-1/2 -translate-x-1/2",
     end: "right-0",
+    "viewport-center": "left-1/2 -translate-x-1/2",
   }[align];
 
   return (
@@ -73,7 +120,7 @@ export function NavDropdown({
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      {/* Trigger — TANPA chevron */}
+      {/* Trigger */}
       <button
         ref={triggerRef}
         type="button"
@@ -94,11 +141,20 @@ export function NavDropdown({
       <div
         className={cn(
           "absolute top-full z-[100] pt-6 transition-all duration-200 ease-out",
-          alignClass,
           open
             ? "visible translate-y-0 opacity-100"
             : "invisible -translate-y-2 opacity-0"
         )}
+        style={
+          open && panelStyle.left
+            ? {
+                ...panelStyle,
+                // Saat open, pakai posisi yang sudah dihitung
+                left: panelStyle.left,
+                transform: undefined,
+              }
+            : undefined
+        }
       >
         <div className="relative" ref={panelRef}>
           {/* Panel Konten */}
