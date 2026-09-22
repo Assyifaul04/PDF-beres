@@ -250,8 +250,8 @@ const data = {
       icon: <ListChecksIcon />,
     },
     {
-      name: "Drive Sync",
-      url: "/admin/files/storage/drive",
+      name: "Storage",
+      url: "/admin/files/storage",
       icon: <CloudArrowUpIcon />,
     },
     {

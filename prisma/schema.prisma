@@ -277,3 +277,18 @@ model ToolMenu {
   @@index([toolType])
   @@map("tool_menus")
 }
+
+// ==============================================================================
+// 5. SYSTEM SETTINGS
+// ==============================================================================
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@index([key])
+  @@map("system_settings")
+}

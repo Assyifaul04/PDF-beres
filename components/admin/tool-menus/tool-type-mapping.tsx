@@ -55,10 +55,11 @@ export function ToolTypeMapping({
     usedTypes.set(type, list);
   });
 
-  function handleChange(menuId: string, value: string) {
+  // ✅ Terima `string | null` — defensif
+  function handleChange(menuId: string, value: string | null) {
     setLocal((prev) => ({
       ...prev,
-      [menuId]: value === "__none__" ? null : value,
+      [menuId]: value === "__none__" || value === null ? null : value,
     }));
     setDirty(true);
   }
@@ -168,7 +169,10 @@ export function ToolTypeMapping({
                   <TableCell>
                     <Select
                       value={current ?? "__none__"}
-                      onValueChange={(v) => handleChange(menu.id, v)}
+                      // ✅ Guard `null` → "__none__"
+                      onValueChange={(v) =>
+                        handleChange(menu.id, v ?? "__none__")
+                      }
                     >
                       <SelectTrigger
                         className={isDuplicate ? "border-amber-500" : ""}
@@ -182,7 +186,11 @@ export function ToolTypeMapping({
                           </span>
                         </SelectItem>
                         {toolTypes.map((t) => (
-                          <SelectItem key={t} value={t} className="font-mono text-xs">
+                          <SelectItem
+                            key={t}
+                            value={t}
+                            className="font-mono text-xs"
+                          >
                             {t}
                           </SelectItem>
                         ))}

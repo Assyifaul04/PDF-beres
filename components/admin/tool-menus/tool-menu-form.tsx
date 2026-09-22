@@ -81,6 +81,11 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
     toolType: initialData?.toolType ?? null,
   });
 
+  // ✅ Helper generik — type-safe, no `null`
+  function updateField<K extends keyof MenuData>(key: K, value: MenuData[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
   function handleTitleChange(value: string) {
     setForm((prev) => ({
       ...prev,
@@ -156,9 +161,8 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               </Label>
               <Select
                 value={form.categoryId}
-                onValueChange={(v) =>
-                  setForm((p) => ({ ...p, categoryId: v }))
-                }
+                // ✅ Guard `null` → string
+                onValueChange={(v) => updateField("categoryId", v ?? "")}
               >
                 <SelectTrigger id="categoryId">
                   <SelectValue placeholder="Pilih kategori..." />
@@ -195,9 +199,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               <Input
                 id="slug"
                 value={form.slug}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, slug: e.target.value }))
-                }
+                onChange={(e) => updateField("slug", e.target.value)}
                 placeholder="word-ke-pdf"
                 className="font-mono text-sm"
                 required
@@ -213,9 +215,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               <Textarea
                 id="description"
                 value={form.description}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, description: e.target.value }))
-                }
+                onChange={(e) => updateField("description", e.target.value)}
                 placeholder="Konversi file Word ke PDF"
                 rows={3}
               />
@@ -229,28 +229,25 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
               <Input
                 id="href"
                 value={form.href}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, href: e.target.value }))
-                }
+                onChange={(e) => updateField("href", e.target.value)}
                 placeholder="/convert-pdf/word-to-pdf"
                 className="font-mono text-sm"
                 required
               />
             </div>
 
-            {/* ✅ ICON PICKER — ganti dari Input text */}
+            {/* Icon Picker */}
             <div className="space-y-2">
               <Label htmlFor="icon">Icon</Label>
               <IconPicker
                 value={form.icon}
-                onChange={(v) => setForm((p) => ({ ...p, icon: v }))}
+                onChange={(v) => updateField("icon", v)}
                 placeholder="Pilih icon..."
               />
               <p className="text-xs text-muted-foreground">
                 Pilih icon dari daftar (opsional)
               </p>
 
-              {/* Preview besar + tombol clear */}
               {selectedIcon && (
                 <div className="mt-2 flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
                   <Image
@@ -272,7 +269,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setForm((p) => ({ ...p, icon: "" }))}
+                    onClick={() => updateField("icon", "")}
                   >
                     Hapus
                   </Button>
@@ -296,10 +293,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
                   type="number"
                   value={form.order}
                   onChange={(e) =>
-                    setForm((p) => ({
-                      ...p,
-                      order: parseInt(e.target.value) || 0,
-                    }))
+                    updateField("order", parseInt(e.target.value) || 0)
                   }
                   min={0}
                 />
@@ -320,9 +314,7 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
                 <Switch
                   id="isActive"
                   checked={form.isActive}
-                  onCheckedChange={(v) =>
-                    setForm((p) => ({ ...p, isActive: v }))
-                  }
+                  onCheckedChange={(v) => updateField("isActive", v)}
                 />
               </div>
 
@@ -330,11 +322,9 @@ export function ToolMenuForm({ mode, initialData, categories }: Props) {
                 <Label htmlFor="toolType">Tool Type Mapping</Label>
                 <Select
                   value={form.toolType ?? "__none__"}
+                  // ✅ Guard `null` → "__none__" → konversi ke null
                   onValueChange={(v) =>
-                    setForm((p) => ({
-                      ...p,
-                      toolType: v === "__none__" ? null : v,
-                    }))
+                    updateField("toolType", v === "__none__" ? null : (v ?? null))
                   }
                 >
                   <SelectTrigger id="toolType">
