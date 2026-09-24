@@ -3,220 +3,176 @@
 
 import * as React from "react";
 import {
-  FileText,
-  Download,
-  FileInput,
-  FileOutput,
-  ExternalLink,
-} from "lucide-react";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { FileText, Download, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface FileInfo {
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface ShowFilesInputFile {
   fileId: string;
   fileKey: string;
   originalName: string;
   mimeType: string;
   sizeBytes: string;
+  expiresAt?: string;
+  order?: number;
 }
 
-interface Props {
-  inputFiles: FileInfo[];
-  outputFiles: FileInfo[];
-  /** Apakah output sudah siap (status COMPLETED) */
-  isCompleted: boolean;
-  /** Trigger button (children) */
-  children: React.ReactNode;
-  className?: string;
+export interface ShowFilesOutputFile {
+  fileId: string;
+  fileKey: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: string;
+  expiresAt?: string;
 }
+
+export interface ShowFilesDialogProps {
+  inputFiles: ShowFilesInputFile[];
+  outputFiles: ShowFilesOutputFile[];
+  isCompleted: boolean;
+
+  /** Controlled mode */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+
+  /** Uncontrolled mode (opsional) */
+  defaultOpen?: boolean;
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
 
 export function ShowFilesDialog({
   inputFiles,
   outputFiles,
   isCompleted,
-  children,
-  className,
-}: Props) {
-  const [open, setOpen] = React.useState(false);
+  open,
+  onOpenChange,
+  defaultOpen = false,
+}: ShowFilesDialogProps) {
+  // Mendukung controlled & uncontrolled
+  const isControlled = open !== undefined;
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
+
+  const actualOpen = isControlled ? open : internalOpen;
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      if (!isControlled) setInternalOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange]
+  );
+
+  const totalFiles = inputFiles.length + outputFiles.length;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className={cn(className)}>{children}</DialogTrigger>
-
-      <DialogContent className="max-w-2xl">
+    <Dialog open={actualOpen} onOpenChange={setOpen}>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Detail Files</DialogTitle>
+          <DialogTitle>Daftar File</DialogTitle>
           <DialogDescription>
-            Daftar file input dan output untuk task ini
+            {isCompleted
+              ? `${totalFiles} file terkait tugas ini.`
+              : "File input untuk tugas ini."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
-          {/* ============================================================
-              SECTION: INPUT FILES
-              ============================================================ */}
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <FileInput className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">
-                File Input ({inputFiles.length})
-              </h3>
-            </div>
+        <div className="space-y-4">
+          {/* ===================== INPUT FILES ===================== */}
+          <FileSection
+            title="File Input"
+            files={inputFiles.map((f) => ({
+              id: f.fileId,
+              name: f.originalName,
+              size: Number(f.sizeBytes),
+              mime: f.mimeType,
+            }))}
+          />
 
-            <div className="space-y-2">
-              {inputFiles.map((file) => (
-                <FileRow
-                  key={file.fileId}
-                  file={file}
-                  type="input"
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* ============================================================
-              SECTION: OUTPUT FILES
-              ============================================================ */}
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <FileOutput className="h-4 w-4 text-green-600" />
-              <h3 className="text-sm font-semibold">
-                File Output ({outputFiles.length})
-              </h3>
-            </div>
-
-            {outputFiles.length === 0 ? (
-              <div className="rounded-md border border-dashed bg-muted/20 p-4 text-center">
-                <p className="text-xs text-muted-foreground">
-                  {isCompleted
-                    ? "Tidak ada output"
-                    : "Output akan tersedia setelah proses selesai"}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {outputFiles.map((file) => (
-                  <FileRow
-                    key={file.fileId}
-                    file={file}
-                    type="output"
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          {/* ===================== OUTPUT FILES ===================== */}
+          {isCompleted && outputFiles.length > 0 && (
+            <FileSection
+              title="File Output"
+              files={outputFiles.map((f) => ({
+                id: f.fileId,
+                name: f.originalName,
+                size: Number(f.sizeBytes),
+                mime: f.mimeType,
+              }))}
+            />
+          )}
         </div>
-
-        {/* Footer */}
-        {outputFiles.length > 1 && (
-          <div className="flex justify-end border-t pt-4">
-            <Button
-              onClick={() => {
-                window.location.href = `/api/tasks/${
-                  outputFiles[0]?.fileId
-                }/download?zip=true`;
-              }}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Unduh Semua (ZIP)
-            </Button>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );
 }
 
 // ============================================================================
-// FILE ROW COMPONENT
+// SUB-COMPONENT
 // ============================================================================
 
-interface FileRowProps {
-  file: FileInfo;
-  type: "input" | "output";
+interface FileItem {
+  id: string;
+  name: string;
+  size: number;
+  mime: string;
 }
 
-function FileRow({ file, type }: FileRowProps) {
-  const sizeLabel = formatSize(Number(file.sizeBytes));
-
+function FileSection({
+  title,
+  files,
+}: {
+  title: string;
+  files: FileItem[];
+}) {
   return (
-    <div className="flex items-center gap-3 rounded-md border bg-card px-3 py-2">
-      {/* Icon */}
-      <div
-        className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
-          type === "input"
-            ? "bg-muted text-muted-foreground"
-            : "bg-green-600/10 text-green-600"
-        )}
-      >
-        <FileText className="h-4 w-4" />
+    <div className="rounded-lg border">
+      <div className="border-b bg-muted/40 px-3 py-2">
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {title}
+        </p>
       </div>
 
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{file.originalName}</p>
-        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{sizeLabel}</span>
-          <span>·</span>
-          <span className="font-mono truncate">{file.mimeType}</span>
+      {files.length === 0 ? (
+        <div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+          <Inbox className="h-4 w-4" />
+          Tidak ada file.
         </div>
-      </div>
-
-      {/* Actions */}
-      {type === "output" && (
-        <div className="flex shrink-0 items-center gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              window.location.href = `/api/files/${file.fileId}/download`;
-            }}
-            aria-label="Unduh file"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              window.open(`/api/files/${file.fileId}/view`, "_blank");
-            }}
-            aria-label="Lihat file"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {type === "input" && (
-        <Badge variant="outline" className="shrink-0 text-[10px]">
-          INPUT
-        </Badge>
+      ) : (
+        <ul className="divide-y">
+          {files.map((f) => (
+            <li
+              key={f.id}
+              className="flex items-center gap-3 px-3 py-2.5 text-sm"
+            >
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate" title={f.name}>
+                {f.name}
+              </span>
+              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                {formatSize(f.size)}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
 }
 
-// ============================================================================
-// HELPER
-// ============================================================================
-
 function formatSize(bytes: number): string {
-  if (bytes >= 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  }
-  if (bytes >= 1024) {
-    return `${(bytes / 1024).toFixed(2)} KB`;
-  }
+  if (!bytes) return "0 B";
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(2)} KB`;
   return `${bytes} B`;
 }

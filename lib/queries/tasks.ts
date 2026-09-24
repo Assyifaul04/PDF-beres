@@ -11,6 +11,10 @@ export interface TasksFilter {
   perPage?: number;
 }
 
+// ============================================================================
+// TASKS LIST (tidak berubah)
+// ============================================================================
+
 export async function getTasksList(filter: TasksFilter) {
   const page = Math.max(1, filter.page ?? 1);
   const perPage = filter.perPage ?? 20;
@@ -49,52 +53,151 @@ export async function getTasksList(filter: TasksFilter) {
     prisma.documentTask.count({ where }),
   ]);
 
-  return { items, total, page, perPage, totalPages: Math.ceil(total / perPage) };
+  return {
+    items,
+    total,
+    page,
+    perPage,
+    totalPages: Math.ceil(total / perPage),
+  };
 }
+
+// ============================================================================
+// TASKS STATS (tidak berubah)
+// ============================================================================
 
 export async function getTasksStats() {
-  const [total, pending, processing, completed, failed] = await Promise.all([
-    prisma.documentTask.count(),
-    prisma.documentTask.count({ where: { status: "PENDING" } }),
-    prisma.documentTask.count({ where: { status: "PROCESSING" } }),
-    prisma.documentTask.count({ where: { status: "COMPLETED" } }),
-    prisma.documentTask.count({ where: { status: "FAILED" } }),
-  ]);
-
-  return { total, pending, processing, completed, failed };
-}
-
-export async function getTasksByToolType() {
-  const groups = await prisma.documentTask.groupBy({
-    by: ["toolType"],
+  // ✅ Optimasi: satu groupBy menggantikan 5 count() terpisah
+  const grouped = await prisma.documentTask.groupBy({
+    by: ["status"],
     _count: { _all: true },
-    _max: { createdAt: true },
-    orderBy: { _count: { toolType: "desc" } },
   });
 
-  // Breakdown status per toolType
-  const withStatus = await Promise.all(
-    groups.map(async (g) => {
-      const [pending, processing, completed, failed] = await Promise.all([
-        prisma.documentTask.count({
-          where: { toolType: g.toolType, status: "PENDING" },
-        }),
-        prisma.documentTask.count({
-          where: { toolType: g.toolType, status: "PROCESSING" },
-        }),
-        prisma.documentTask.count({
-          where: { toolType: g.toolType, status: "COMPLETED" },
-        }),
-        prisma.documentTask.count({
-          where: { toolType: g.toolType, status: "FAILED" },
-        }),
-      ]);
-      return { ...g, pending, processing, completed, failed };
-    })
-  );
+  const stats = {
+    total: 0,
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    failed: 0,
+  };
 
-  return withStatus;
+  for (const row of grouped) {
+    const count = row._count._all;
+    stats.total += count;
+    switch (row.status) {
+      case "PENDING":
+        stats.pending = count;
+        break;
+      case "PROCESSING":
+        stats.processing = count;
+        break;
+      case "COMPLETED":
+        stats.completed = count;
+        break;
+      case "FAILED":
+        stats.failed = count;
+        break;
+    }
+  }
+
+  return stats;
 }
+
+// ============================================================================
+// TASKS BY TOOL TYPE (🔥 FIXED — akar masalah P2024)
+// ============================================================================
+
+export interface ToolTypeGroup {
+  toolType: ToolType;
+  _count: { _all: number };
+  _max: { createdAt: Date | null };
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+}
+
+/**
+ * Statistik task dikelompokkan per toolType.
+ *
+ * ✅ FIX: gunakan SATU query `groupBy(["toolType","status"])` sebagai
+ * ganti pola lama N × 4 `count()` di dalam `Promise.all` + `map`.
+ *
+ * Sebelum:
+ *   - 21 tool × 4 status = 84 query paralel
+ *   - Connection pool default Prisma = 5
+ *   - Hasil: P2024 timeout (10s)
+ *
+ * Sesudah:
+ *   - 1 query groupBy
+ *   - 1 round-trip ke database
+ *   - Aman untuk connection pool kecil (Neon/Supabase free tier)
+ */
+export async function getTasksByToolType(): Promise<ToolTypeGroup[]> {
+  // ---------- 1. groupBy (toolType, status) ----------
+  const grouped = await prisma.documentTask.groupBy({
+    by: ["toolType", "status"],
+    _count: { _all: true },
+    _max: { createdAt: true },
+  });
+
+  // ---------- 2. Susun menjadi Map<toolType, ToolTypeGroup> ----------
+  const map = new Map<ToolType, ToolTypeGroup>();
+
+  for (const row of grouped) {
+    const key = row.toolType;
+
+    if (!map.has(key)) {
+      map.set(key, {
+        toolType: key,
+        _count: { _all: 0 },
+        _max: { createdAt: null },
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0,
+      });
+    }
+
+    const entry = map.get(key)!;
+    const count = row._count._all;
+
+    entry._count._all += count;
+
+    // _max.createdAt: ambil nilai terbaru antar status
+    const rowMax = row._max.createdAt;
+    if (
+      rowMax &&
+      (!entry._max.createdAt || rowMax > entry._max.createdAt)
+    ) {
+      entry._max.createdAt = rowMax;
+    }
+
+    switch (row.status) {
+      case "PENDING":
+        entry.pending = count;
+        break;
+      case "PROCESSING":
+        entry.processing = count;
+        break;
+      case "COMPLETED":
+        entry.completed = count;
+        break;
+      case "FAILED":
+        entry.failed = count;
+        break;
+    }
+  }
+
+  // ---------- 3. Urutkan berdasarkan total desc ----------
+  return Array.from(map.values()).sort(
+    (a, b) => b._count._all - a._count._all
+  );
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
 
 export function getToolTypeLabel(toolType: ToolType): string {
   const map: Record<ToolType, string> = {

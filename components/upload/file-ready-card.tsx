@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { X, Settings, ArrowRight } from "lucide-react";
+import { X, Settings, ArrowRight, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,17 +49,6 @@ interface Props {
   className?: string;
 }
 
-/**
- * Card yang tampil setelah file berhasil diupload.
- *
- * Layout:
- * ┌─────────────────────────────────────────────────────────┐
- * │ welpaper.jpg        Keluaran: [PNG▼]  ⚙  ✕              │
- * │ 498.49 KB                                               │
- * ├─────────────────────────────────────────────────────────┤
- * │ Menambahkan 1 file                    [Mengubah →]      │
- * └─────────────────────────────────────────────────────────┘
- */
 export function FileReadyCard({
   file,
   outputOptions,
@@ -73,39 +62,58 @@ export function FileReadyCard({
   totalFiles = 1,
   className,
 }: Props) {
+  const hasOutput = !!outputOptions && outputOptions.length > 0;
+
   return (
-    <div className={cn("w-full overflow-hidden rounded-md border bg-card", className)}>
-      {/* ============================================================
-          Baris atas: file info + controls
-          ============================================================ */}
-      <div className="flex items-center justify-between gap-4 px-4 py-3">
-        {/* Kiri: nama file + size */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium leading-tight">
-            {file.originalName}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {formatSize(Number(file.sizeBytes))}
-          </p>
+    <div
+      className={cn(
+        "w-full overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm",
+        className
+      )}
+    >
+      {/* ================= Bagian atas: info file + kontrol ================= */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4 sm:flex-nowrap sm:p-5">
+        {/* Kiri: ikon + nama + ukuran */}
+        <div className="flex min-w-0 flex-1 basis-full items-center gap-3.5 sm:basis-auto">
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+            aria-hidden="true"
+          >
+            <FileText className="h-5 w-5" />
+          </div>
+
+          <div className="min-w-0">
+            <p
+              className="truncate text-sm font-semibold leading-tight"
+              title={file.originalName}
+            >
+              {file.originalName}
+            </p>
+            <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+              {formatSize(Number(file.sizeBytes))}
+            </p>
+          </div>
         </div>
 
-        {/* Kanan: output select + gear + X */}
-        <div className="flex shrink-0 items-center gap-2">
-          {/* Output selector */}
-          {outputOptions && outputOptions.length > 0 && (
-            <div className="flex items-center gap-2">
+        {/* Kanan: output select + pengaturan + hapus */}
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0">
+          {hasOutput && (
+            <div className="mr-1 flex items-center gap-2">
               <span className="hidden text-sm text-muted-foreground sm:inline">
-                Keluaran:
+                Keluaran
               </span>
               <Select
                 value={outputValue}
                 onValueChange={(v) => onOutputChange?.(v ?? "")}
               >
-                <SelectTrigger className="h-9 w-[100px] border-primary/40 text-primary">
+                <SelectTrigger
+                  className="h-9 w-[104px] font-medium"
+                  aria-label="Format keluaran"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {outputOptions.map((opt) => (
+                  {outputOptions!.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
@@ -115,50 +123,55 @@ export function FileReadyCard({
             </div>
           )}
 
-          {/* Gear — settings */}
           {onSettings && (
             <button
               type="button"
               onClick={onSettings}
               aria-label="Pengaturan"
-              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Settings className="h-5 w-5" />
+              <Settings className="h-[18px] w-[18px]" />
             </button>
           )}
 
-          {/* X — remove */}
           <button
             type="button"
             onClick={onRemove}
             aria-label="Hapus file"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <X className="h-5 w-5" />
+            <X className="h-[18px] w-[18px]" />
           </button>
         </div>
       </div>
 
-      {/* ============================================================
-          Baris bawah: action bar
-          ============================================================ */}
-      <div className="flex items-stretch justify-between border-t bg-muted/40">
-        {/* Label kiri */}
-        <div className="flex items-center px-4">
-          <span className="text-sm text-muted-foreground">
-            Menambahkan {totalFiles} file
-          </span>
-        </div>
+      {/* ================= Bagian bawah: action bar ================= */}
+      <div className="flex items-center justify-between gap-3 border-t bg-muted/30 px-4 py-3 sm:px-5">
+        <span className="text-sm text-muted-foreground">
+          Menambahkan{" "}
+          <span className="font-medium tabular-nums text-foreground">
+            {totalFiles}
+          </span>{" "}
+          file
+        </span>
 
-        {/* Tombol process kanan */}
         <Button
           type="button"
           onClick={onProcess}
           disabled={isProcessing}
-          className="h-14 rounded-none rounded-br-md px-6 text-base font-medium"
+          className="h-10 gap-2 px-5 text-sm font-semibold"
         >
-          {isProcessing ? "Memproses..." : processLabel}
-          <ArrowRight className="ml-2 h-5 w-5" />
+          {isProcessing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+              Memproses...
+            </>
+          ) : (
+            <>
+              {processLabel}
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>

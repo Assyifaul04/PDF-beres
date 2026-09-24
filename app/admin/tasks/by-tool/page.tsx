@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { ToolTypeStats } from "@/components/admin/tasks/tool-type-stats";
 import { ToolTypeTable } from "@/components/admin/tasks/tool-type-table";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Tasks by Tool Type | Admin",
   description: "Kelompokkan task per ToolType",

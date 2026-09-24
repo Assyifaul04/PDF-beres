@@ -143,7 +143,6 @@ export function LandingHero({
 
       const taskId = json.data.taskId;
 
-      // ✅ FIX: redirect ke /process/<taskId> (route valid)
       router.push(`/process/${taskId}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Gagal memproses";
@@ -161,7 +160,7 @@ export function LandingHero({
     const canProcess = uploadedFiles.length >= minFiles;
 
     return (
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl px-4 py-8">
         <input
           ref={hiddenInputRef}
           type="file"
@@ -172,7 +171,7 @@ export function LandingHero({
         />
 
         {canAddMore && (
-          <div className="mb-2">
+          <div className="mb-4">
             <AddMoreFilesButton
               onClick={handleAddMore}
               disabled={isUploading || isProcessing}
@@ -180,7 +179,7 @@ export function LandingHero({
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           {uploadedFiles.map((file) => (
             <FileReadyCard
               key={file.fileId}
@@ -201,20 +200,19 @@ export function LandingHero({
         </div>
 
         {!canProcess && (
-          <p className="mt-3 text-center text-sm text-muted-foreground">
-            Tambahkan {minFiles - uploadedFiles.length} file lagi untuk
-            melanjutkan
+          <p className="mt-4 text-center text-sm font-medium text-muted-foreground">
+            Tambahkan {minFiles - uploadedFiles.length} file lagi untuk melanjutkan
           </p>
         )}
 
         {isUploading && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-sm font-medium">Mengunggah... {progress}%</p>
-              <div className="h-2 w-48 overflow-hidden rounded-full bg-muted">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-base font-medium text-foreground">Mengunggah... {progress}%</p>
+              <div className="h-2.5 w-64 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full bg-primary transition-all"
+                  className="h-full bg-primary transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -229,7 +227,7 @@ export function LandingHero({
   // RENDER — State 1: dropzone
   // ==========================================================================
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <FileDropzone
         title={title}
         description={description}
@@ -243,13 +241,13 @@ export function LandingHero({
       />
 
       {isUploading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl bg-background/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-sm font-medium">Mengunggah... {progress}%</p>
-            <div className="h-2 w-48 overflow-hidden rounded-full bg-muted">
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-3xl bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-base font-medium text-foreground">Mengunggah... {progress}%</p>
+            <div className="h-2.5 w-64 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full bg-primary transition-all"
+                className="h-full bg-primary transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>

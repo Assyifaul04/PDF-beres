@@ -153,7 +153,7 @@ model File {
   moveToDriveAt   DateTime        @default(now())
 
   createdAt DateTime @default(now())
-  expiresAt DateTime
+  expiresAt DateTime @default(dbgenerated("(NOW() + INTERVAL '30 days')"))
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 

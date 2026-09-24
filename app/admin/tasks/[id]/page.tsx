@@ -81,11 +81,13 @@ export default async function TaskDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <Button variant="outline" size="icon" asChild={false}>
-            <Link href="/admin/tasks">
+          {/* ✅ FIX: Link membungkus Button, tanpa asChild */}
+          <Link href="/admin/tasks" aria-label="Kembali ke daftar task">
+            <Button variant="outline" size="icon">
               <ArrowLeftIcon className="h-4 w-4" />
-            </Link>
-          </Button>
+            </Button>
+          </Link>
+
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">

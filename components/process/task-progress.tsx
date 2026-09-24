@@ -5,13 +5,18 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { TaskProgressCard } from "@/components/process/task-progress-card";
 import { ShowFilesDialog } from "@/components/process/show-files-dialog";
-import { convertClientSide } from "@/lib/client/converters";
+import {
+  convertClientSide,
+  isClientTool,
+  type ConverterInput,
+} from "@/lib/client/converters";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 type TaskStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+type CardStatus = "pending" | "processing" | "completed" | "failed";
 
 interface InputFileInfo {
   fileId: string;
@@ -19,6 +24,7 @@ interface InputFileInfo {
   originalName: string;
   mimeType: string;
   sizeBytes: string;
+  expiresAt?: string;
   order: number;
 }
 
@@ -28,6 +34,7 @@ interface OutputFileInfo {
   originalName: string;
   mimeType: string;
   sizeBytes: string;
+  expiresAt?: string;
 }
 
 interface TaskData {
@@ -37,6 +44,7 @@ interface TaskData {
   errorMessage: string | null;
   settings: unknown;
   createdAt: string;
+  updatedAt?: string;
   completedAt: string | null;
   userId: string | null;
   inputFiles: InputFileInfo[];
@@ -47,15 +55,69 @@ interface Props {
   initialTask: TaskData;
   toolTitle: string;
   slug: string;
-  /** Label heading di atas card, misal "HASIL KONVERSI" */
   categoryLabel?: string;
 }
 
 // ============================================================================
-// CONSTANTS
+// HELPERS
 // ============================================================================
 
-const SERVER_ONLY_TOOLS = new Set(["POWERPOINT_TO_PDF"]);
+function mapStatusToCard(status: TaskStatus): CardStatus {
+  switch (status) {
+    case "PENDING":
+      return "pending";
+    case "PROCESSING":
+      return "processing";
+    case "COMPLETED":
+      return "completed";
+    case "FAILED":
+      return "failed";
+  }
+}
+
+/**
+ * Fetch task dengan retry ringan.
+ */
+async function fetchTask(
+  taskId: string,
+  retries = 2
+): Promise<Partial<TaskData> | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        return (json.data ?? json) as Partial<TaskData>;
+      }
+      if (res.status >= 400 && res.status < 500) return null; // client error → stop
+    } catch {
+      // network error → retry
+    }
+    if (attempt < retries) {
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
+  }
+  return null;
+}
+
+/**
+ * Report error ke server agar task ditandai FAILED.
+ */
+async function reportError(taskId: string, message: string): Promise<void> {
+  try {
+    const formData = new FormData();
+    formData.append("error", message);
+    const res = await fetch(`/api/tasks/${taskId}/complete`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      console.warn("[task-progress] reportError failed:", res.status);
+    }
+  } catch (e) {
+    console.warn("[task-progress] reportError exception:", e);
+  }
+}
 
 // ============================================================================
 // COMPONENT
@@ -72,52 +134,58 @@ export function TaskProgress({
   const [task, setTask] = React.useState<TaskData>(initialTask);
   const [clientProgress, setClientProgress] = React.useState(0);
   const [clientMessage, setClientMessage] = React.useState("");
-  const [mode, setMode] = React.useState<"client" | "server">("client");
   const [showFilesOpen, setShowFilesOpen] = React.useState(false);
+
   const hasTriggered = React.useRef(false);
 
+  const runsOnClient = isClientTool(task.toolType);
+
   // ==========================================================================
-  // AUTO-TRIGGER CLIENT PROCESSING
+  // AUTO-TRIGGER (hanya sekali saat PENDING)
   // ==========================================================================
   React.useEffect(() => {
     if (hasTriggered.current) return;
     if (task.status !== "PENDING") return;
-    if (mode !== "client") return;
 
     hasTriggered.current = true;
-    runClientProcessing();
-  }, [task.id, task.status, mode]);
+
+    if (runsOnClient) {
+      void runClientProcessing();
+    } else {
+      void runServerProcessing();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.id, task.status, runsOnClient]);
 
   // ==========================================================================
   // CLIENT-SIDE PROCESSING
   // ==========================================================================
   async function runClientProcessing() {
     try {
-      if (SERVER_ONLY_TOOLS.has(task.toolType)) {
-        setClientMessage("Tool ini diproses di server...");
-        await runServerProcessing();
-        return;
-      }
-
       setTask((prev) => ({ ...prev, status: "PROCESSING" }));
-      setClientMessage("Mempersiapkan file...");
       setClientProgress(2);
+      setClientMessage("Mempersiapkan file...");
 
-      // 1. Fetch signed URLs
-      const dataRes = await fetch(`/api/tasks/${task.id}/data`);
+      // 1) Ambil signed URLs
+      const dataRes = await fetch(`/api/tasks/${task.id}/data`, {
+        cache: "no-store",
+      });
+      if (!dataRes.ok) throw new Error(`Gagal ambil data (${dataRes.status})`);
       const dataJson = await dataRes.json();
       if (!dataJson.success) {
-        throw new Error(dataJson.error ?? "Gagal fetch data");
+        throw new Error(dataJson.error ?? "Gagal ambil data");
       }
 
-      const { inputFiles } = dataJson.data;
+      const inputsFromApi: { name: string; url: string }[] =
+        dataJson.data?.inputFiles ?? [];
+      if (!inputsFromApi.length) throw new Error("Tidak ada file input");
 
+      // 2) Download semua input
       setClientProgress(5);
       setClientMessage("Mendownload file...");
 
-      // 2. Download semua input
-      const inputs = await Promise.all(
-        inputFiles.map(async (f: { name: string; url: string }) => {
+      const inputs: ConverterInput[] = await Promise.all(
+        inputsFromApi.map(async (f) => {
           const res = await fetch(f.url);
           if (!res.ok) throw new Error(`Gagal download ${f.name}`);
           const buffer = await res.arrayBuffer();
@@ -128,51 +196,49 @@ export function TaskProgress({
       setClientProgress(20);
       setClientMessage("Mengkonversi...");
 
-      // 3. Convert di client
+      // 3) Convert di browser
       const output = await convertClientSide(
         task.toolType,
         inputs,
-        task.settings as Record<string, unknown> | null,
+        (task.settings as Record<string, unknown> | null) ?? null,
         (pct, msg) => {
           const mapped = 20 + Math.round((pct / 100) * 60);
           setClientProgress(mapped);
-          setClientMessage(msg);
+          if (msg) setClientMessage(msg);
         }
       );
 
       setClientProgress(85);
-      setClientMessage("Menyelesaikan Unggahan");
+      setClientMessage("Mengunggah hasil...");
 
-      // 4. Upload output
+      // 4) Upload output
       const formData = new FormData();
       formData.append("output", output.blob, output.fileName);
+      formData.append("mimeType", output.mimeType);
 
       const completeRes = await fetch(`/api/tasks/${task.id}/complete`, {
         method: "POST",
         body: formData,
       });
       const completeJson = await completeRes.json();
-      if (!completeJson.success) {
+      if (!completeRes.ok || !completeJson.success) {
         throw new Error(completeJson.error ?? "Gagal upload hasil");
       }
 
       setClientProgress(100);
       setClientMessage("Selesai!");
 
+      // 5) Sync dari server
+      const fresh = await fetchTask(task.id);
       setTask((prev) => ({
         ...prev,
+        ...(fresh ?? {}),
         status: "COMPLETED",
-        completedAt: new Date().toISOString(),
+        completedAt: fresh?.completedAt ?? new Date().toISOString(),
       }));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Terjadi kesalahan";
-      const formData = new FormData();
-      formData.append("error", message);
-      await fetch(`/api/tasks/${task.id}/complete`, {
-        method: "POST",
-        body: formData,
-      }).catch(() => null);
-
+      await reportError(task.id, message);
       setTask((prev) => ({ ...prev, status: "FAILED", errorMessage: message }));
     }
   }
@@ -190,12 +256,20 @@ export function TaskProgress({
         method: "POST",
       });
       const json = await res.json();
-      if (!json.success) {
+
+      // Kalau 409 (task sudah diproses), tetap polling
+      if (res.status === 409) {
+        setClientMessage("Menunggu server...");
+        setClientProgress(30);
+        return;
+      }
+
+      if (!res.ok || !json.success) {
         throw new Error(json.error ?? "Server processing gagal");
       }
 
-      setClientProgress(90);
-      setClientMessage("Hampir selesai...");
+      setClientMessage("Menunggu server...");
+      setClientProgress(30);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Terjadi kesalahan";
       setTask((prev) => ({ ...prev, status: "FAILED", errorMessage: message }));
@@ -203,32 +277,31 @@ export function TaskProgress({
   }
 
   // ==========================================================================
-  // POLLING — server-side only
+  // POLLING (server-only)
   // ==========================================================================
   React.useEffect(() => {
+    if (runsOnClient) return;
     if (task.status === "COMPLETED" || task.status === "FAILED") return;
-    if (mode === "client" && !SERVER_ONLY_TOOLS.has(task.toolType)) return;
 
+    let cancelled = false;
     const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/tasks/${task.id}`);
-        if (!res.ok) return;
-        const json = await res.json();
-        const data = json.data ?? json;
-        setTask((prev) => ({
-          ...prev,
-          status: data.status,
-          errorMessage: data.errorMessage,
-          completedAt: data.completedAt,
-          outputFiles: data.outputFiles ?? prev.outputFiles,
-        }));
-      } catch (err) {
-        console.error("Polling error:", err);
+      const fresh = await fetchTask(task.id);
+      if (cancelled || !fresh) return;
+      setTask((prev) => ({
+        ...prev,
+        ...fresh,
+        status: (fresh.status as TaskStatus) ?? prev.status,
+      }));
+      if (fresh.status === "PROCESSING") {
+        setClientProgress((p) => Math.min(p + 5, 90));
       }
     }, 2000);
 
-    return () => clearInterval(interval);
-  }, [task.id, task.status, mode]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [task.id, task.status, runsOnClient]);
 
   // ==========================================================================
   // HANDLERS
@@ -242,36 +315,31 @@ export function TaskProgress({
   };
 
   // ==========================================================================
-  // DERIVED DATA
+  // DERIVED
   // ==========================================================================
-  const cardStatus: "processing" | "completed" | "failed" =
-    task.status === "PROCESSING" || task.status === "PENDING"
-      ? "processing"
-      : task.status === "COMPLETED"
-        ? "completed"
-        : "failed";
+  const cardStatus: CardStatus = mapStatusToCard(task.status);
 
   const inputFileName = task.inputFiles[0]?.originalName ?? "file";
   const inputFileSize = Number(task.inputFiles[0]?.sizeBytes ?? 0);
   const outputFileName = task.outputFiles[0]?.originalName;
+  const outputCount = task.outputFiles.length;
 
   // ==========================================================================
   // RENDER
   // ==========================================================================
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      {/* Heading */}
       {categoryLabel && (
         <h2 className="text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
           {categoryLabel}
         </h2>
       )}
 
-      {/* Progress Card */}
       <TaskProgressCard
         inputFileName={inputFileName}
         inputFileSize={inputFileSize}
         outputFileName={outputFileName}
+        outputCount={outputCount}
         status={cardStatus}
         progress={clientProgress}
         statusLabel={clientMessage || "Memproses..."}
@@ -280,7 +348,6 @@ export function TaskProgress({
         onShowFiles={() => setShowFilesOpen(true)}
       />
 
-      {/* ✅ Modal "Tampilkan Files" — controlled, tanpa trigger */}
       <ShowFilesDialog
         inputFiles={task.inputFiles}
         outputFiles={task.outputFiles}
@@ -289,7 +356,6 @@ export function TaskProgress({
         onOpenChange={setShowFilesOpen}
       />
 
-      {/* Error box */}
       {task.status === "FAILED" && task.errorMessage && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
           <p className="text-sm font-medium text-destructive">Detail Error</p>

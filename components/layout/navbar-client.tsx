@@ -4,9 +4,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { UserMenu } from "@/components/auth/user-menu";
 import { NavDropdown } from "@/components/menu/nav-dropdown";
 import { NavDropdownMobile } from "@/components/menu/nav-dropdown-mobile";
@@ -30,13 +32,13 @@ interface Props {
 export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
   const [open, setOpen] = useState(false);
   const isLoggedIn = !!session?.user;
+  const t = useTranslations("nav");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* ✅ KIRI: Logo + Menu dalam satu grup */}
+        {/* KIRI: Logo + Menu */}
         <div className="flex items-center gap-6 lg:gap-8">
-          {/* Logo */}
           <Link
             href="/"
             aria-label="Beres — Home"
@@ -52,14 +54,13 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
             />
           </Link>
 
-          {/* Desktop links — tepat di samping logo */}
           <ul className="hidden items-center gap-6 md:flex">
             <li>
               <Link
                 href="/combine-pdf"
                 className="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                Combine PDF
+                {t("combinePdf")}
               </Link>
             </li>
             <li>
@@ -67,7 +68,7 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
                 href="/separate-pdf"
                 className="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                Separate PDF
+                {t("separatePdf")}
               </Link>
             </li>
             <li>
@@ -75,14 +76,13 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
                 href="/compress-pdf"
                 className="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                Compress PDF
+                {t("compressPdf")}
               </Link>
             </li>
 
-            {/* PDF Conversion — center ke trigger */}
             <li>
               <NavDropdown
-                label="PDF Conversion"
+                label={t("pdfConversion")}
                 href="/convert-pdf"
                 align="center"
                 panelClassName="w-[450px] p-5"
@@ -91,10 +91,9 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
               </NavDropdown>
             </li>
 
-            {/* All PDF Tools — panel center viewport, arrow ke trigger */}
             <li>
               <NavDropdown
-                label="All PDF Tools"
+                label={t("allPdfTools")}
                 href="/tools"
                 align="viewport-center"
                 panelClassName="w-[1100px] max-w-[calc(100vw-2rem)] p-6"
@@ -105,9 +104,13 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
           </ul>
         </div>
 
-        {/* ✅ KANAN: CTA + Theme toggle */}
+        {/* KANAN: Language + Theme + CTA (avatar) */}
         <div className="hidden items-center gap-3 md:flex">
+          {/* ✅ Language switcher — di sebelah kanan avatar */}
+          <LanguageSwitcher />
+
           <ThemeToggle />
+
           {isLoggedIn ? (
             <UserMenu user={session.user!} />
           ) : (
@@ -116,13 +119,13 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
                 href="/login"
                 className="whitespace-nowrap text-sm text-muted-foreground hover:text-foreground"
               >
-                Sign in
+                {t("signIn")}
               </Link>
               <Link
                 href="/signup"
                 className="whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
               >
-                Get Started
+                {t("getStarted")}
               </Link>
             </>
           )}
@@ -144,14 +147,19 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
           "overflow-y-auto border-t transition-all md:hidden",
           open
             ? "max-h-[calc(100vh-4rem)] border-border"
-            : "max-h-0 border-transparent",
+            : "max-h-0 border-transparent"
         )}
       >
+        {/* Theme + Language baris atas */}
         <div className="flex items-center justify-between px-4 pt-4">
           <span className="text-xs font-medium uppercase text-muted-foreground">
-            Theme
+            {t("theme")}
           </span>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            {/* ✅ Language switcher juga di mobile */}
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
         </div>
 
         <ul className="space-y-1 px-4 py-4">
@@ -161,7 +169,7 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
               onClick={() => setOpen(false)}
               className="block rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              Combine PDF
+              {t("combinePdf")}
             </Link>
           </li>
           <li>
@@ -170,7 +178,7 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
               onClick={() => setOpen(false)}
               className="block rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              Separate PDF
+              {t("separatePdf")}
             </Link>
           </li>
           <li>
@@ -179,15 +187,15 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
               onClick={() => setOpen(false)}
               className="block rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              Compress PDF
+              {t("compressPdf")}
             </Link>
           </li>
 
-          <NavDropdownMobile label="PDF Conversion">
+          <NavDropdownMobile label={t("pdfConversion")}>
             <DynamicMenuColumns columns={pdfColumns} gridCols={1} mobile />
           </NavDropdownMobile>
 
-          <NavDropdownMobile label="All PDF Tools">
+          <NavDropdownMobile label={t("allPdfTools")}>
             <DynamicMenuColumns columns={allToolColumns} gridCols={1} mobile />
           </NavDropdownMobile>
         </ul>
@@ -228,14 +236,14 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
                 onClick={() => setOpen(false)}
                 className="rounded-lg border px-4 py-2 text-center text-sm font-medium hover:bg-muted"
               >
-                Sign in
+                {t("signIn")}
               </Link>
               <Link
                 href="/signup"
                 onClick={() => setOpen(false)}
                 className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                Get Started
+                {t("getStarted")}
               </Link>
             </div>
           )}

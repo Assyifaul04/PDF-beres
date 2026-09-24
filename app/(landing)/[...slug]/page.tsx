@@ -14,6 +14,13 @@ function getLastSegment(slug: string[]): string {
   return slug[slug.length - 1] ?? "";
 }
 
+const STEPS = [
+  { title: "Unggah file", text: "Pilih atau seret file yang ingin diproses." },
+  { title: "Atur opsi", text: "Sesuaikan format keluaran jika perlu." },
+  { title: "Proses", text: "Klik tombol proses dan tunggu sebentar." },
+  { title: "Unduh hasil", text: "Simpan file hasilnya ke perangkat Anda." },
+];
+
 export async function generateMetadata({ params }: { params: Params }) {
   const { slug } = await params;
   const toolSlug = getLastSegment(slug);
@@ -75,7 +82,7 @@ export default async function ToolPage({ params }: { params: Params }) {
       {/* BREADCRUMB */}
       <nav aria-label="Breadcrumb" className="border-b bg-background">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <ol className="flex items-center gap-1.5 py-3 text-sm">
+          <ol className="flex flex-wrap items-center gap-1.5 py-3 text-sm">
             <li>
               <Link
                 href="/"
@@ -103,15 +110,17 @@ export default async function ToolPage({ params }: { params: Params }) {
             )}
 
             <li>
-              <span className="font-medium text-foreground">{title}</span>
+              <span aria-current="page" className="font-medium text-foreground">
+                {title}
+              </span>
             </li>
           </ol>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="relative overflow-hidden border-b bg-gradient-to-b from-muted/40 to-background">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+      <section className="border-b bg-muted/30">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
           <LandingHero
             slug={config.slug}
             title={title}
@@ -129,33 +138,23 @@ export default async function ToolPage({ params }: { params: Params }) {
       </section>
 
       {/* CARA PAKAI */}
-      <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold">Cara pakai {title}</h2>
-        <ol className="mt-4 space-y-3 text-muted-foreground">
-          <li className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              1
-            </span>
-            <span>Unggah file yang ingin diproses.</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              2
-            </span>
-            <span>Sesuaikan opsi jika perlu.</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              3
-            </span>
-            <span>Klik tombol proses dan tunggu sebentar.</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              4
-            </span>
-            <span>Unduh hasilnya.</span>
-          </li>
+      <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+        <h2 className="text-2xl font-bold tracking-tight">
+          Cara pakai {title}
+        </h2>
+
+        <ol className="mt-8 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((step, i) => (
+            <li key={step.title} className="border-t-2 border-primary/20 pt-4">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold tabular-nums text-primary-foreground">
+                {i + 1}
+              </span>
+              <h3 className="mt-3 text-sm font-semibold">{step.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                {step.text}
+              </p>
+            </li>
+          ))}
         </ol>
       </section>
     </>
