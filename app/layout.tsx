@@ -8,6 +8,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
+import { Monetag } from "@/components/ads/monetag";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -29,7 +30,6 @@ export const metadata: Metadata = {
   description:
     "Merge, split, compress, convert, and edit PDF files online. Free, fast, and secure.",
   other: {
-    // ✅ Meta tag verifikasi AdSense — JANGAN HAPUS
     "google-adsense-account": "ca-pub-2352891869256632",
   },
 };
@@ -77,6 +77,9 @@ export default async function RootLayout({
             </ThemeProvider>
           </AuthSessionProvider>
         </NextIntlClientProvider>
+
+        {/* ✅ Monetag — Zone 11901037 */}
+        <Monetag />
       </body>
     </html>
   );
