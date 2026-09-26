@@ -1,6 +1,5 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
@@ -29,7 +28,6 @@ export const metadata: Metadata = {
   description:
     "Merge, split, compress, convert, and edit PDF files online. Free, fast, and secure.",
   other: {
-    // ✅ Verifikasi kepemilikan AdSense
     "google-adsense-account": "ca-pub-2352891869256632",
   },
 };
@@ -55,15 +53,6 @@ export default async function RootLayout({
         "font-sans"
       )}
     >
-      <head>
-        {/* ✅ Google AdSense */}
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2352891869256632"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthSessionProvider>
