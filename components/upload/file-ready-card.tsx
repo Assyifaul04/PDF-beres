@@ -123,7 +123,7 @@ export function FileReadyWorkspace({
           </div>
         ) : (
           /* ================================================================= */
-          /* GRID MASONRY — kartu lebar dengan preview PDF penuh              */
+          /* GRID MASONRY — kartu dengan preview multi-format                  */
           /* ================================================================= */
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-6 pt-2">
             {files.map((file, index) => {
@@ -175,16 +175,18 @@ export function FileReadyWorkspace({
                   </div>
 
                   {/* ============================================== */}
-                  {/* CARD DENGAN PREVIEW PDF PENUH                  */}
+                  {/* CARD DENGAN PREVIEW MULTI-FORMAT               */}
                   {/* ============================================== */}
                   <div className="flex flex-col rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:border-primary hover:shadow-md">
-                    {/* Preview PDF — pakai PdfPreview bukan PdfThumbnail */}
+                    {/* Preview — PdfPreview auto-deteksi PDF/Image/DOCX/XLSX */}
                     <div className="w-full overflow-hidden rounded-lg border border-border/50 bg-muted/30">
                       <PdfPreview
                         url={pdfUrl}
                         rotation={file.rotation || 0}
                         containerWidth={220}
                         showPageCount
+                        mimeType={file.mimeType}
+                        originalName={file.originalName}
                       />
                     </div>
 

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "postinstall": "node scripts/copy-wasm.mjs"
+    "postinstall": "prisma generate && node scripts/copy-wasm.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

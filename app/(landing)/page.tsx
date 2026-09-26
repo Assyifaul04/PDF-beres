@@ -1,5 +1,8 @@
 // app/(landing)/page.tsx
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import {
   ArrowRight,
   ShieldCheck,
@@ -41,18 +44,11 @@ const motionCss = `
 }
 `;
 
-/**
- * Token merah PDF yang konsisten di light & dark mode.
- * Dipusatkan di sini supaya semua tombol/aksen memakai warna & rasio kontras yang sama,
- * dan mudah diubah dari satu tempat saja.
- */
 const red = {
-  // tombol solid (primary)
   solidBg: "bg-red-600 dark:bg-red-700",
   solidHoverBg: "hover:bg-red-700 dark:hover:bg-red-600",
   solidRing: "focus-visible:ring-red-600 dark:focus-visible:ring-red-500",
   solidShadow: "shadow-red-600/25 hover:shadow-red-600/30 dark:shadow-red-900/40",
-  // teks/ikon/aksen merah di atas latar netral
   text: "text-red-600 dark:text-red-400",
   hoverText: "hover:text-red-600 dark:hover:text-red-400",
   hoverBorder: "hover:border-red-600 dark:hover:border-red-500",
@@ -61,6 +57,13 @@ const red = {
 };
 
 export default async function LandingPage() {
+  // ✅ Redirect admin ke dashboard
+  const session = await getServerSession(authOptions);
+  const user = session?.user as { role?: string } | undefined;
+  if (user?.role === "ADMIN") {
+    redirect("/admin/dashboard");
+  }
+
   // Ambil data secara paralel: settings + menu dari database
   const [general, groups] = await Promise.all([
     getSettings("general"),
@@ -115,7 +118,6 @@ export default async function LandingPage() {
               className="lp-rise mt-8 flex flex-wrap items-center gap-3"
               style={{ animationDelay: "240ms" }}
             >
-              {/* TOMBOL UTAMA — merah PDF, kontras terjaga di kedua tema */}
               <Link
                 href={`/${defaultTool.slug ?? "merge-pdf"}`}
                 className={`group inline-flex h-12 items-center gap-2 rounded-lg px-6 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${red.solidBg} ${red.solidHoverBg} ${red.solidRing} ${red.solidShadow}`}
@@ -123,7 +125,6 @@ export default async function LandingPage() {
                 Gabungkan PDF
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
               </Link>
-              {/* TOMBOL SEKUNDER — outline netral, aksen merah saat hover/focus */}
               <Link
                 href="#tools"
                 className={`inline-flex h-12 items-center rounded-lg border border-border bg-background px-6 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${red.hoverBorder} ${red.hoverText} ${red.hoverTint} ${red.solidRing}`}
@@ -153,7 +154,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* TOOLS — dinamis dari database */}
+      {/* TOOLS */}
       <section
         id="tools"
         className="mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
@@ -201,7 +202,6 @@ export default async function LandingPage() {
                               aria-hidden
                               className="absolute inset-y-0 left-0 w-0.5 origin-center scale-y-0 bg-red-600 transition-transform duration-300 group-hover:scale-y-100 group-focus-visible:scale-y-100 motion-reduce:transition-none dark:bg-red-500"
                             />
-                            {/* ICON — otomatis deteksi PNG atau Lucide */}
                             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted transition-all duration-300 group-hover:-rotate-3 group-hover:scale-110 group-hover:bg-red-50 motion-reduce:transition-none motion-reduce:group-hover:transform-none dark:group-hover:bg-red-950/40">
                               <ToolIcon
                                 name={tool.iconName}

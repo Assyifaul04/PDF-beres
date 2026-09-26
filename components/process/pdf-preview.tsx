@@ -1,218 +1,178 @@
-// components/process/pdf-preview.tsx
 "use client";
 
 import * as React from "react";
-import { Loader2, AlertTriangle } from "lucide-react";
-import * as pdfjs from "pdfjs-dist";
+import {
+  FileText,
+  FileImage,
+  FileSpreadsheet,
+  FileType2,
+  Presentation,
+  File,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// ============================================================================
-// WORKER INIT (sekali saja)
-// ============================================================================
-
-let workerInitialized = false;
-
-if (typeof window !== "undefined" && !workerInitialized) {
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
-  workerInitialized = true;
-}
-
-// ============================================================================
-// HELPERS — deteksi error abort secara menyeluruh
-// ============================================================================
-
-function isAbortError(err: any): boolean {
-  if (!err) return false;
-
-  const name = err?.name ?? "";
-  const msg = String(err?.message ?? "").toLowerCase();
-
-  return (
-    name === "AbortError" ||
-    name === "RenderingCancelledException" ||
-    msg.includes("loading aborted") ||
-    msg.includes("aborted") ||
-    msg.includes("cancelled") ||
-    msg.includes("destroyed") ||
-    msg.includes("204") ||
-    msg.includes("no content")
-  );
-}
 
 // ============================================================================
 // TYPES
 // ============================================================================
-
 interface PdfPreviewProps {
   url: string;
   rotation?: number;
   containerWidth?: number;
   className?: string;
   showPageCount?: boolean;
+  mimeType?: string | null;
+  originalName?: string | null;
 }
 
 // ============================================================================
-// COMPONENT
+// HELPERS
 // ============================================================================
 
+function hasExt(name: string | null | undefined, ...exts: string[]): boolean {
+  if (!name) return false;
+  const lower = name.toLowerCase();
+  return exts.some((e) => lower.endsWith(e));
+}
+
+type FileKind = "pdf" | "word" | "excel" | "powerpoint" | "image" | "other";
+
+function getFileKind(
+  mimeType?: string | null,
+  originalName?: string | null
+): FileKind {
+  const t = (mimeType ?? "").toLowerCase();
+
+  // -------- PDF --------
+  if (t === "application/pdf" || hasExt(originalName, ".pdf")) {
+    return "pdf";
+  }
+
+  // -------- Word --------
+  if (
+    t ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    t === "application/msword" ||
+    hasExt(originalName, ".docx", ".doc", ".rtf", ".odt")
+  ) {
+    return "word";
+  }
+
+  // -------- Excel --------
+  if (
+    t ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    t === "application/vnd.ms-excel" ||
+    t === "text/csv" ||
+    hasExt(originalName, ".xlsx", ".xls", ".csv", ".ods")
+  ) {
+    return "excel";
+  }
+
+  // -------- PowerPoint --------
+  if (
+    t ===
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+    t === "application/vnd.ms-powerpoint" ||
+    hasExt(originalName, ".pptx", ".ppt", ".odp")
+  ) {
+    return "powerpoint";
+  }
+
+  // -------- Image --------
+  if (
+    t.startsWith("image/") ||
+    hasExt(originalName, ".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg", ".bmp")
+  ) {
+    return "image";
+  }
+
+  return "other";
+}
+
+type KindConfig = {
+  Icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  iconClass: string;
+  bgClass: string;
+};
+
+const KIND_CONFIG: Record<FileKind, KindConfig> = {
+  pdf: {
+    Icon: FileText,
+    label: "PDF",
+    iconClass: "text-red-600 dark:text-red-400",
+    bgClass: "bg-red-600/10 dark:bg-red-500/15",
+  },
+  word: {
+    Icon: FileType2,
+    label: "Word",
+    iconClass: "text-blue-600 dark:text-blue-400",
+    bgClass: "bg-blue-600/10 dark:bg-blue-500/15",
+  },
+  excel: {
+    Icon: FileSpreadsheet,
+    label: "Excel",
+    iconClass: "text-emerald-600 dark:text-emerald-400",
+    bgClass: "bg-emerald-600/10 dark:bg-emerald-500/15",
+  },
+  powerpoint: {
+    Icon: Presentation,
+    label: "PowerPoint",
+    iconClass: "text-orange-600 dark:text-orange-400",
+    bgClass: "bg-orange-600/10 dark:bg-orange-500/15",
+  },
+  image: {
+    Icon: FileImage,
+    label: "Gambar",
+    iconClass: "text-purple-600 dark:text-purple-400",
+    bgClass: "bg-purple-600/10 dark:bg-purple-500/15",
+  },
+  other: {
+    Icon: File,
+    label: "Berkas",
+    iconClass: "text-muted-foreground",
+    bgClass: "bg-muted",
+  },
+};
+
+// ============================================================================
+// MAIN
+// ============================================================================
 export function PdfPreview({
   url,
   rotation = 0,
   containerWidth = 220,
   className,
   showPageCount = true,
+  mimeType,
+  originalName,
 }: PdfPreviewProps) {
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(false);
-  const [numPages, setNumPages] = React.useState<number | null>(null);
-  const [measuredWidth, setMeasuredWidth] = React.useState(containerWidth);
+  const kind = getFileKind(mimeType, originalName);
+  const config = KIND_CONFIG[kind];
+  const Icon = config.Icon;
 
-  // -------- Ukur lebar container sebenarnya --------
-  React.useEffect(() => {
-    if (!containerRef.current) return;
-
-    const el = containerRef.current;
-    const updateWidth = () => {
-      const w = el.clientWidth;
-      if (w > 0) setMeasuredWidth(w);
-    };
-
-    updateWidth();
-
-    const ro = new ResizeObserver(updateWidth);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  // -------- Render halaman PDF --------
-  React.useEffect(() => {
-    let cancelled = false;
-    let pdfDoc: any = null;
-    let renderTask: any = null;
-
-    async function renderPdfPage() {
-      try {
-        setLoading(true);
-        setError(false);
-
-        const loadingTask = pdfjs.getDocument({ url });
-        pdfDoc = await loadingTask.promise;
-
-        if (cancelled) {
-          try { pdfDoc.destroy(); } catch {}
-          return;
-        }
-
-        setNumPages(pdfDoc.numPages);
-
-        const page = await pdfDoc.getPage(1);
-        if (cancelled) return;
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const context = canvas.getContext("2d");
-        if (!context) return;
-
-        // -------- Hitung scale berdasarkan lebar container --------
-        const baseViewport = page.getViewport({ scale: 1.0 });
-        const targetWidth = measuredWidth - 16;
-        const scale = targetWidth / baseViewport.width;
-        const viewport = page.getViewport({ scale });
-
-        // -------- Setup canvas dengan devicePixelRatio --------
-        const outputScale = window.devicePixelRatio || 1;
-
-        canvas.width = Math.floor(viewport.width * outputScale);
-        canvas.height = Math.floor(viewport.height * outputScale);
-        canvas.style.width = `${Math.floor(viewport.width)}px`;
-        canvas.style.height = `${Math.floor(viewport.height)}px`;
-
-        const transform =
-          outputScale !== 1
-            ? [outputScale, 0, 0, outputScale, 0, 0]
-            : undefined;
-
-        renderTask = page.render({
-          canvasContext: context,
-          viewport,
-          transform,
-        });
-
-        await renderTask.promise;
-
-        if (!cancelled) setLoading(false);
-      } catch (err: any) {
-        // ⚠️ Abaikan SEMUA error abort — jangan log sama sekali
-        if (isAbortError(err)) return;
-
-        console.error("Gagal memuat preview PDF:", err);
-        if (!cancelled) {
-          setError(true);
-          setLoading(false);
-        }
-      }
-    }
-
-    if (url && measuredWidth > 0) {
-      renderPdfPage();
-    }
-
-    return () => {
-      cancelled = true;
-      try { renderTask?.cancel(); } catch {}
-      try { pdfDoc?.destroy(); } catch {}
-    };
-  }, [url, measuredWidth]);
-
-  // ==========================================================================
-  // ERROR STATE
-  // ==========================================================================
-  if (error) {
-    return (
-      <div
-        ref={containerRef}
-        className={cn(
-          "flex aspect-[3/4] w-full flex-col items-center justify-center gap-1 rounded-lg bg-muted/20 text-muted-foreground",
-          className
-        )}
-      >
-        <AlertTriangle className="h-8 w-8 text-red-500/70" />
-        <span className="text-[10px] font-medium">Preview Gagal</span>
-      </div>
-    );
-  }
-
-  // ==========================================================================
-  // NORMAL STATE
-  // ==========================================================================
   return (
     <div
-      ref={containerRef}
       className={cn(
-        "relative flex w-full items-start justify-center overflow-hidden rounded-lg bg-background",
+        "relative flex aspect-[3/4] w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-lg border border-border/50",
+        config.bgClass,
         className
       )}
+      style={{ transform: rotation ? `rotate(${rotation}deg)` : undefined }}
+      title={originalName ?? config.label}
     >
-      {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      )}
+      {/* ICON BESAR */}
+      <Icon className={cn("h-12 w-12", config.iconClass)} />
 
-      <canvas
-        ref={canvasRef}
-        className="block rounded-sm shadow-sm transition-transform duration-300"
-        style={{ transform: `rotate(${rotation}deg)` }}
-      />
-
-      {showPageCount && !loading && numPages && numPages > 1 && (
-        <span className="absolute bottom-1.5 right-1.5 z-10 rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-white">
-          {numPages} hlm
-        </span>
-      )}
+      {/* LABEL TIPE FILE */}
+      <span
+        className={cn(
+          "rounded-full bg-background/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm",
+          config.iconClass
+        )}
+      >
+        {config.label}
+      </span>
     </div>
   );
 }

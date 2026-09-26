@@ -1,8 +1,7 @@
-// components/process/pdf-thumbnail.tsx
 "use client";
 
 import * as React from "react";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, FileText } from "lucide-react";
 import * as pdfjs from "pdfjs-dist";
 
 let workerInitialized = false;
@@ -15,15 +14,46 @@ if (typeof window !== "undefined" && !workerInitialized) {
 interface PdfThumbnailProps {
   url: string;
   rotation?: number;
+  mimeType?: string | null;
+  originalName?: string | null;
 }
 
-export function PdfThumbnail({ url, rotation = 0 }: PdfThumbnailProps) {
+// ✅ Helper: cek ekstensi file
+function hasExt(name: string | null | undefined, ...exts: string[]): boolean {
+  if (!name) return false;
+  const lower = name.toLowerCase();
+  return exts.some((e) => lower.endsWith(e));
+}
+
+function isPdf(mimeType?: string | null, originalName?: string | null): boolean {
+  const t = (mimeType ?? "").toLowerCase();
+  if (t === "application/pdf") return true;
+  return hasExt(originalName, ".pdf");
+}
+
+function isImage(mimeType?: string | null, originalName?: string | null): boolean {
+  const t = (mimeType ?? "").toLowerCase();
+  if (t.startsWith("image/")) return true;
+  return hasExt(originalName, ".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg");
+}
+
+export function PdfThumbnail({
+  url,
+  rotation = 0,
+  mimeType,
+  originalName,
+}: PdfThumbnailProps) {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(false);
   const [numPages, setNumPages] = React.useState<number | null>(null);
 
+  const pdf = isPdf(mimeType, originalName);
+  const image = isImage(mimeType, originalName);
+
   React.useEffect(() => {
+    if (!pdf) return;
+
     let cancelled = false;
     let pdfDoc: any = null;
     let renderTask: any = null;
@@ -33,19 +63,14 @@ export function PdfThumbnail({ url, rotation = 0 }: PdfThumbnailProps) {
         setLoading(true);
         setError(false);
 
-        // ⚠️ Pakai `url` langsung — pdf.js yang handle fetch
-        // Tidak ada AbortController yang bentrok dengan React Strict Mode
         const loadingTask = pdfjs.getDocument({
           url,
           withCredentials: false,
-          // Cegah pdf.js abort kalau ada re-mount
-          disableAutoFetch: false,
-          disableStream: false,
         });
 
         pdfDoc = await loadingTask.promise;
         if (cancelled) {
-          pdfDoc.destroy();
+          try { pdfDoc.destroy(); } catch {}
           return;
         }
 
@@ -75,13 +100,12 @@ export function PdfThumbnail({ url, rotation = 0 }: PdfThumbnailProps) {
           canvasContext: context,
           viewport,
           transform,
-        });
+        } as any);
 
         await renderTask.promise;
 
         if (!cancelled) setLoading(false);
       } catch (err: any) {
-        // Abaikan error abort (normal dari Strict Mode)
         if (
           err?.name === "AbortError" ||
           err?.name === "RenderingCancelledException" ||
@@ -89,7 +113,7 @@ export function PdfThumbnail({ url, rotation = 0 }: PdfThumbnailProps) {
         ) {
           return;
         }
-        console.error("Gagal memuat preview PDF:", err);
+        console.error("Gagal memuat thumbnail PDF:", err);
         if (!cancelled) {
           setError(true);
           setLoading(false);
@@ -97,24 +121,44 @@ export function PdfThumbnail({ url, rotation = 0 }: PdfThumbnailProps) {
       }
     }
 
-    if (url) {
-      renderPdfPage();
-    }
+    if (url) renderPdfPage();
 
     return () => {
       cancelled = true;
       if (renderTask) {
-        try {
-          renderTask.cancel();
-        } catch {}
+        try { renderTask.cancel(); } catch {}
       }
       if (pdfDoc) {
-        try {
-          pdfDoc.destroy();
-        } catch {}
+        try { pdfDoc.destroy(); } catch {}
       }
     };
-  }, [url]);
+  }, [url, pdf]);
+
+  // -------- Gambar --------
+  if (image) {
+    return (
+      <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-muted/20 p-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={originalName ?? "Thumbnail"}
+          className="h-full w-full rounded-sm object-cover"
+        />
+      </div>
+    );
+  }
+
+  // -------- Bukan PDF/Gambar --------
+  if (!pdf) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted/20 p-1 text-center text-muted-foreground">
+        <FileText className="h-8 w-8 opacity-50" />
+        <span className="max-w-full truncate text-[9px] font-medium">
+          {originalName ?? "Dokumen"}
+        </span>
+      </div>
+    );
+  }
 
   if (error) {
     return (
