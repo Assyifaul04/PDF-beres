@@ -5,12 +5,24 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 
+/**
+ * Tipe minimal user dari session.
+ * Dibuat lokal untuk menghindari TS2339 saat build.
+ */
+type SessionUserWithRole = {
+  role?: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
+  const user = session?.user as SessionUserWithRole | undefined;
 
-  if (session?.user) {
+  if (user) {
     // Admin → /admin/dashboard, User biasa → / (landing)
-    const target = session.user.role === "ADMIN" ? "/admin/dashboard" : "/";
+    const target = user.role === "ADMIN" ? "/admin/dashboard" : "/";
     redirect(target);
   }
 

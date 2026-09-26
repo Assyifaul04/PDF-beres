@@ -6,6 +6,19 @@ import { prisma } from "@/lib/prisma";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getSettings } from "@/lib/settings/helpers";
 
+/**
+ * Tipe minimal session yang dibutuhkan route ini.
+ * Dibuat lokal supaya tidak bergantung sepenuhnya pada augmentasi
+ * `next-auth.d.ts` (mencegah TS2339 saat build di Vercel).
+ */
+type SessionUserWithId = {
+  id?: string;
+  role?: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
 // ============================================================================
 // GET /api/files/[id] — Serve file untuk preview/download
 // ============================================================================
@@ -106,7 +119,8 @@ export async function DELETE(
 
     // -------- Auth --------
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id ?? null;
+    const user = session?.user as SessionUserWithId | undefined;
+    const userId = user?.id ?? null;
 
     // -------- Cari file di DB --------
     const file = await prisma.file.findUnique({ where: { id } });

@@ -4,16 +4,31 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+/**
+ * Tipe minimal session yang kita butuhkan.
+ * Dibuat lokal supaya route ini tidak bergantung sepenuhnya
+ * pada augmentasi `next-auth.d.ts` (mencegah TS2339 saat build).
+ */
+type SessionUserWithRole = {
+  id?: string
+  role?: string
+  name?: string | null
+  email?: string | null
+  image?: string | null
+}
+
 export async function GET(request: Request) {
   try {
     // ✅ 1. Cek autentikasi
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = session?.user as SessionUserWithRole | undefined
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // ✅ 2. Cek role ADMIN
-    if (session.user.role !== "ADMIN") {
+    if (user.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -127,7 +142,7 @@ export async function GET(request: Request) {
         },
       }),
 
-      // -------- CHART DATA (7 hari terakhir) --------
+      // -------- CHART DATA (N hari terakhir) --------
       prisma.$queryRaw<Array<{ date: Date; users: bigint; files: bigint; tasks: bigint }>>`
         WITH dates AS (
           SELECT generate_series(

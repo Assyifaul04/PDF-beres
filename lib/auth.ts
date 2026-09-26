@@ -6,6 +6,8 @@ import type { Role } from "@prisma/client";
 import type { Adapter } from "next-auth/adapters";
 import { prisma } from "@/lib/prisma";
 
+type UserWithRole = { id?: string; role?: Role };
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
 
@@ -31,8 +33,9 @@ export const authOptions: NextAuthOptions = {
     // ✅ JWT: simpan id & role ke token
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = (user as { role: Role }).role;
+        const u = user as unknown as UserWithRole;
+        token.id = u.id ?? token.sub ?? "";
+        token.role = (u.role ?? "USER") as Role;
       }
       return token;
     },
@@ -40,8 +43,9 @@ export const authOptions: NextAuthOptions = {
     // ✅ Session: ekspos id & role ke client
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as Role;
+        const u = session.user as unknown as { id?: string; role?: Role };
+        u.id = (token.id as string) ?? "";
+        u.role = (token.role as Role) ?? "USER";
       }
       return session;
     },
