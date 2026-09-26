@@ -15,6 +15,7 @@ import { getLandingToolGroups } from "@/lib/menu/queries";
 import { Reveal } from "./reveal";
 import { HeroImage } from "@/components/landing/hero-image";
 import { ToolIcon } from "@/components/landing/tool-icon";
+import { AdSense } from "@/components/ads/adsense";
 
 const principles = [
   {
@@ -55,6 +56,10 @@ const red = {
   hoverTint: "hover:bg-red-600/[0.04] dark:hover:bg-red-500/[0.08]",
   softBg: "bg-red-600/10 dark:bg-red-500/15",
 };
+
+// ✅ Slot ID dari dashboard AdSense
+const ADS_SLOT_TOP = "4773268308";     // Landing - Top
+const ADS_SLOT_BOTTOM = "3460186635";  // Landing - Bottom
 
 export default async function LandingPage() {
   // ✅ Redirect admin ke dashboard
@@ -153,6 +158,13 @@ export default async function LandingPage() {
           <HeroImage />
         </div>
       </section>
+
+      {/* ============================================================ */}
+      {/* IKLAN 1 — Setelah Hero                                        */}
+      {/* ============================================================ */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <AdSense slot={ADS_SLOT_TOP} format="auto" />
+      </div>
 
       {/* TOOLS */}
       <section
@@ -261,6 +273,13 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ============================================================ */}
+      {/* IKLAN 2 — Sebelum CTA                                        */}
+      {/* ============================================================ */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <AdSense slot={ADS_SLOT_BOTTOM} format="auto" />
+      </div>
 
       {/* CTA PENUTUP */}
       <section>
