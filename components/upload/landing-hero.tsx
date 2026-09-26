@@ -5,9 +5,9 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FileDropzone } from "@/components/upload/file-dropzone";
-import { FileReadyCard } from "@/components/upload/file-ready-card";
-import { AddMoreFilesButton } from "@/components/upload/add-more-files-button";
+import { FileReadyWorkspace } from "@/components/upload/file-ready-card";
 import type { UploadedFile } from "@/components/upload/file-ready-card";
+import type { ToolSettings } from "@/lib/tools/settings";
 
 interface OutputOption {
   value: string;
@@ -44,18 +44,12 @@ export function LandingHero({
   const router = useRouter();
 
   const [uploadedFiles, setUploadedFiles] = React.useState<UploadedFile[]>([]);
-  const [outputValue, setOutputValue] = React.useState<string>(
-    outputOptions?.[0]?.value ?? ""
-  );
   const [isUploading, setIsUploading] = React.useState(false);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
 
   const hiddenInputRef = React.useRef<HTMLInputElement>(null);
 
-  // ==========================================================================
-  // HANDLE UPLOAD
-  // ==========================================================================
   const handleFilesSelected = async (files: File[]) => {
     if (files.length === 0) return;
 
@@ -91,17 +85,29 @@ export function LandingHero({
     }
   };
 
-  // ==========================================================================
-  // HANDLE REMOVE
-  // ==========================================================================
   const handleRemoveFile = async (fileId: string) => {
     setUploadedFiles((prev) => prev.filter((f) => f.fileId !== fileId));
     fetch(`/api/files/${fileId}`, { method: "DELETE" }).catch(() => null);
   };
 
-  // ==========================================================================
-  // HANDLE ADD MORE
-  // ==========================================================================
+  // Handler untuk mengubah urutan file setelah dipindah (Drag & Drop)
+  const handleReorderFiles = (reorderedFiles: UploadedFile[]) => {
+    setUploadedFiles(reorderedFiles);
+  };
+
+  // Handler untuk memutar rotasi gambar PDF (0° -> 90° -> 180° -> 270°)
+  const handleRotateFile = (fileId: string) => {
+    setUploadedFiles((prev) =>
+      prev.map((f) => {
+        if (f.fileId === fileId) {
+          const currentRotation = f.rotation || 0;
+          return { ...f, rotation: (currentRotation + 90) % 360 };
+        }
+        return f;
+      })
+    );
+  };
+
   const handleAddMore = () => {
     hiddenInputRef.current?.click();
   };
@@ -116,11 +122,13 @@ export function LandingHero({
     if (hiddenInputRef.current) hiddenInputRef.current.value = "";
   };
 
-  // ==========================================================================
-  // HANDLE PROCESS
-  // ==========================================================================
-  const handleProcess = async () => {
+  const handleProcess = async (settings: ToolSettings) => {
     if (uploadedFiles.length === 0) return;
+
+    if (uploadedFiles.length < minFiles) {
+      toast.error(`Tambahkan ${minFiles - uploadedFiles.length} file lagi untuk melanjutkan`);
+      return;
+    }
 
     setIsProcessing(true);
 
@@ -131,7 +139,14 @@ export function LandingHero({
         body: JSON.stringify({
           toolType,
           fileIds: uploadedFiles.map((f) => f.fileId),
-          settings: outputValue ? { output: outputValue } : null,
+          settings: {
+            ...settings,
+            // Mengirim urutan file terbaru dan rotasinya ke backend
+            fileOrders: uploadedFiles.map((f) => ({
+              fileId: f.fileId,
+              rotation: f.rotation || 0,
+            })),
+          },
         }),
       });
 
@@ -151,16 +166,9 @@ export function LandingHero({
     }
   };
 
-  // ==========================================================================
-  // RENDER — State 2: file ready
-  // ==========================================================================
   if (uploadedFiles.length > 0) {
-    const canAddMore =
-      multiple && (maxFiles === 0 || uploadedFiles.length < maxFiles);
-    const canProcess = uploadedFiles.length >= minFiles;
-
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <input
           ref={hiddenInputRef}
           type="file"
@@ -170,40 +178,18 @@ export function LandingHero({
           onChange={handleHiddenInputChange}
         />
 
-        {canAddMore && (
-          <div className="mb-4">
-            <AddMoreFilesButton
-              onClick={handleAddMore}
-              disabled={isUploading || isProcessing}
-            />
-          </div>
-        )}
-
-        <div className="space-y-3">
-          {uploadedFiles.map((file) => (
-            <FileReadyCard
-              key={file.fileId}
-              file={file}
-              outputOptions={outputOptions}
-              outputValue={outputValue}
-              onOutputChange={setOutputValue}
-              onRemove={() => handleRemoveFile(file.fileId)}
-              onSettings={() =>
-                toast.info("Pengaturan lanjutan segera hadir")
-              }
-              onProcess={handleProcess}
-              isProcessing={isProcessing}
-              processLabel={processLabel}
-              totalFiles={uploadedFiles.length}
-            />
-          ))}
-        </div>
-
-        {!canProcess && (
-          <p className="mt-4 text-center text-sm font-medium text-muted-foreground">
-            Tambahkan {minFiles - uploadedFiles.length} file lagi untuk melanjutkan
-          </p>
-        )}
+        <FileReadyWorkspace
+          files={uploadedFiles}
+          title={title}
+          toolType={toolType as any}
+          onRemove={handleRemoveFile}
+          onReorder={handleReorderFiles}
+          onRotate={handleRotateFile}
+          onProcess={handleProcess}
+          onAddMore={handleAddMore}
+          isProcessing={isProcessing}
+          processLabel={processLabel}
+        />
 
         {isUploading && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
@@ -223,11 +209,8 @@ export function LandingHero({
     );
   }
 
-  // ==========================================================================
-  // RENDER — State 1: dropzone
-  // ==========================================================================
   return (
-    <div className="relative w-full">
+    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
       <FileDropzone
         title={title}
         description={description}
@@ -257,10 +240,6 @@ export function LandingHero({
     </div>
   );
 }
-
-// ============================================================================
-// Upload via XHR
-// ============================================================================
 
 interface UploadResponse {
   success: boolean;

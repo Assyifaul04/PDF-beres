@@ -49,7 +49,7 @@ export function BackToTop() {
       aria-label="Kembali ke atas halaman"
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
-      className={`group fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border bg-background/90 text-foreground shadow-lg backdrop-blur transition-all duration-300 hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none sm:right-6 ${
+      className={`group fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none dark:hover:border-red-700 dark:hover:bg-red-700 sm:right-6 ${
         visible
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-3 opacity-0"
@@ -67,7 +67,7 @@ export function BackToTop() {
           r={RADIUS}
           fill="none"
           strokeWidth="2"
-          className="stroke-border group-hover:stroke-primary-foreground/30"
+          className="stroke-border transition-colors duration-300 group-hover:stroke-white/30"
         />
         <circle
           cx="22"
@@ -78,7 +78,7 @@ export function BackToTop() {
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
-          className="stroke-primary group-hover:stroke-primary-foreground"
+          className="stroke-red-600 transition-colors duration-300 group-hover:stroke-white dark:stroke-red-500"
         />
       </svg>
       <ArrowUp className="relative h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 motion-reduce:transition-none" />

@@ -59,6 +59,60 @@ interface Props {
 }
 
 // ============================================================================
+// SAVINGS TOOLS — Tool yang menampilkan grafik "SAVED"
+// ============================================================================
+
+const SAVINGS_TOOLS = new Set<string>([
+  "COMPRESS_PDF",         // Kompresi → ukuran turun
+  "PDF_TO_JPG",           // PDF → JPG biasanya lebih kecil
+  "PDF_TO_WORD",          // PDF → Word biasanya lebih kecil
+  "PDF_TO_POWERPOINT",    // PDF → PPT biasanya lebih kecil
+  "PDF_TO_EXCEL",         // PDF → Excel biasanya lebih kecil
+]);
+
+function shouldShowSavings(toolType: string): boolean {
+  return SAVINGS_TOOLS.has(toolType);
+}
+
+function getSavingsLabels(toolType: string): {
+  title: string;
+  description: string;
+} {
+  switch (toolType) {
+    case "COMPRESS_PDF":
+      return {
+        title: "File berhasil dikompres!",
+        description: "Menghemat",
+      };
+    case "PDF_TO_JPG":
+      return {
+        title: "PDF berhasil dikonversi ke gambar!",
+        description: "Ukuran turun",
+      };
+    case "PDF_TO_WORD":
+      return {
+        title: "PDF berhasil dikonversi ke Word!",
+        description: "Ukuran turun",
+      };
+    case "PDF_TO_POWERPOINT":
+      return {
+        title: "PDF berhasil dikonversi ke PowerPoint!",
+        description: "Ukuran turun",
+      };
+    case "PDF_TO_EXCEL":
+      return {
+        title: "PDF berhasil dikonversi ke Excel!",
+        description: "Ukuran turun",
+      };
+    default:
+      return {
+        title: "File berhasil diproses!",
+        description: "Menghemat",
+      };
+  }
+}
+
+// ============================================================================
 // HELPERS
 // ============================================================================
 
@@ -75,9 +129,6 @@ function mapStatusToCard(status: TaskStatus): CardStatus {
   }
 }
 
-/**
- * Fetch task dengan retry ringan.
- */
 async function fetchTask(
   taskId: string,
   retries = 2
@@ -89,9 +140,9 @@ async function fetchTask(
         const json = await res.json();
         return (json.data ?? json) as Partial<TaskData>;
       }
-      if (res.status >= 400 && res.status < 500) return null; // client error → stop
+      if (res.status >= 400 && res.status < 500) return null;
     } catch {
-      // network error → retry
+      // network error
     }
     if (attempt < retries) {
       await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
@@ -100,9 +151,6 @@ async function fetchTask(
   return null;
 }
 
-/**
- * Report error ke server agar task ditandai FAILED.
- */
 async function reportError(taskId: string, message: string): Promise<void> {
   try {
     const formData = new FormData();
@@ -141,7 +189,7 @@ export function TaskProgress({
   const runsOnClient = isClientTool(task.toolType);
 
   // ==========================================================================
-  // AUTO-TRIGGER (hanya sekali saat PENDING)
+  // AUTO-TRIGGER
   // ==========================================================================
   React.useEffect(() => {
     if (hasTriggered.current) return;
@@ -166,7 +214,6 @@ export function TaskProgress({
       setClientProgress(2);
       setClientMessage("Mempersiapkan file...");
 
-      // 1) Ambil signed URLs
       const dataRes = await fetch(`/api/tasks/${task.id}/data`, {
         cache: "no-store",
       });
@@ -180,7 +227,6 @@ export function TaskProgress({
         dataJson.data?.inputFiles ?? [];
       if (!inputsFromApi.length) throw new Error("Tidak ada file input");
 
-      // 2) Download semua input
       setClientProgress(5);
       setClientMessage("Mendownload file...");
 
@@ -196,7 +242,6 @@ export function TaskProgress({
       setClientProgress(20);
       setClientMessage("Mengkonversi...");
 
-      // 3) Convert di browser
       const output = await convertClientSide(
         task.toolType,
         inputs,
@@ -211,7 +256,6 @@ export function TaskProgress({
       setClientProgress(85);
       setClientMessage("Mengunggah hasil...");
 
-      // 4) Upload output
       const formData = new FormData();
       formData.append("output", output.blob, output.fileName);
       formData.append("mimeType", output.mimeType);
@@ -228,7 +272,6 @@ export function TaskProgress({
       setClientProgress(100);
       setClientMessage("Selesai!");
 
-      // 5) Sync dari server
       const fresh = await fetchTask(task.id);
       setTask((prev) => ({
         ...prev,
@@ -257,7 +300,6 @@ export function TaskProgress({
       });
       const json = await res.json();
 
-      // Kalau 409 (task sudah diproses), tetap polling
       if (res.status === 409) {
         setClientMessage("Menunggu server...");
         setClientProgress(30);
@@ -277,7 +319,7 @@ export function TaskProgress({
   }
 
   // ==========================================================================
-  // POLLING (server-only)
+  // POLLING
   // ==========================================================================
   React.useEffect(() => {
     if (runsOnClient) return;
@@ -306,8 +348,34 @@ export function TaskProgress({
   // ==========================================================================
   // HANDLERS
   // ==========================================================================
-  const handleDownload = () => {
-    window.location.href = `/api/tasks/${task.id}/download`;
+  const handleDownload = async () => {
+    if (task.outputFiles.length <= 1) {
+      const link = document.createElement("a");
+      link.href = `/api/tasks/${task.id}/download`;
+      link.download = task.outputFiles[0]?.originalName || "download";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      try {
+        const res = await fetch(`/api/tasks/${task.id}/download`);
+        const json = await res.json();
+        if (json.success && json.data?.files) {
+          json.data.files.forEach((f: { url: string; name: string }) => {
+            if (f.url) {
+              const link = document.createElement("a");
+              link.href = f.url;
+              link.download = f.name;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }
+          });
+        }
+      } catch (err) {
+        console.error("[download] error:", err);
+      }
+    }
   };
 
   const handleRemove = () => {
@@ -322,7 +390,12 @@ export function TaskProgress({
   const inputFileName = task.inputFiles[0]?.originalName ?? "file";
   const inputFileSize = Number(task.inputFiles[0]?.sizeBytes ?? 0);
   const outputFileName = task.outputFiles[0]?.originalName;
+  const outputFileSize = Number(task.outputFiles[0]?.sizeBytes ?? 0);
   const outputCount = task.outputFiles.length;
+
+  // Tentukan apakah tool ini menampilkan savings
+  const showSavings = shouldShowSavings(task.toolType);
+  const savingsLabels = getSavingsLabels(task.toolType);
 
   // ==========================================================================
   // RENDER
@@ -339,6 +412,7 @@ export function TaskProgress({
         inputFileName={inputFileName}
         inputFileSize={inputFileSize}
         outputFileName={outputFileName}
+        outputFileSize={outputFileSize}
         outputCount={outputCount}
         status={cardStatus}
         progress={clientProgress}
@@ -346,6 +420,9 @@ export function TaskProgress({
         onDownload={handleDownload}
         onRemove={handleRemove}
         onShowFiles={() => setShowFilesOpen(true)}
+        showSavings={showSavings}
+        savingsTitle={savingsLabels.title}
+        savingsDescription={savingsLabels.description}
       />
 
       <ShowFilesDialog
@@ -354,6 +431,7 @@ export function TaskProgress({
         isCompleted={task.status === "COMPLETED"}
         open={showFilesOpen}
         onOpenChange={setShowFilesOpen}
+        showSavings={showSavings}
       />
 
       {task.status === "FAILED" && task.errorMessage && (

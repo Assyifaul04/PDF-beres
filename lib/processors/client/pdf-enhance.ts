@@ -10,7 +10,19 @@ import type {
 import { loadPDF, savePDF, toUint8 } from './utils';
 import { assert } from '../errors';
 
-// ============ WATERMARK_PDF ============
+// ============================================================================
+// WATERMARK_PDF
+// ============================================================================
+
+/**
+ * Tipe posisi watermark (subset dari ProcessOptions['position']).
+ * Hanya posisi yang valid untuk watermark yang dipakai.
+ */
+type WatermarkPosition =
+  | 'top-left' | 'top-center' | 'top-right'
+  | 'center'
+  | 'bottom-left' | 'bottom-center' | 'bottom-right';
+
 export async function watermarkPDF(
   files: FileInput[],
   options: ProcessOptions,
@@ -21,27 +33,87 @@ export async function watermarkPDF(
 
   const doc = await loadPDF(files[0]);
   const font = await doc.embedFont(StandardFonts.HelveticaBold);
+
   const text = options.text ?? 'CONFIDENTIAL';
   const opacity = options.opacity ?? 0.3;
   const color = options.color ?? { r: 1, g: 0, b: 0 };
+  const position = (options.position ?? 'center') as WatermarkPosition;
+
   const pages = doc.getPages();
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     const { width, height } = page.getSize();
+
+    // Font size proporsional terhadap halaman
     const fontSize = Math.min(width, height) * 0.12;
     const textWidth = font.widthOfTextAtSize(text, fontSize);
+    const textHeight = fontSize;
+
+    // Margin untuk posisi di tepi halaman
+    const margin = Math.min(width, height) * 0.08;
+
+    // =========================================================
+    // Hitung (x, y) berdasarkan posisi
+    // =========================================================
+    let x = 0;
+    let y = 0;
+
+    switch (position) {
+      case 'top-left':
+        x = margin;
+        y = height - margin - textHeight;
+        break;
+
+      case 'top-center':
+        x = width / 2 - textWidth / 2;
+        y = height - margin - textHeight;
+        break;
+
+      case 'top-right':
+        x = width - margin - textWidth;
+        y = height - margin - textHeight;
+        break;
+
+      case 'center':
+      default:
+        x = width / 2 - textWidth / 2;
+        y = height / 2 - textHeight / 2;
+        break;
+
+      case 'bottom-left':
+        x = margin;
+        y = margin;
+        break;
+
+      case 'bottom-center':
+        x = width / 2 - textWidth / 2;
+        y = margin;
+        break;
+
+      case 'bottom-right':
+        x = width - margin - textWidth;
+        y = margin;
+        break;
+    }
+
+    // =========================================================
+    // Rotasi hanya untuk posisi 'center' (watermark diagonal)
+    // Posisi lain digambar horizontal agar tidak keluar halaman
+    // =========================================================
+    const rotate = position === 'center' ? degrees(-45) : degrees(0);
 
     page.drawText(text, {
-      x: width / 2 - textWidth / 2,
-      y: height / 2 - fontSize / 2,
+      x,
+      y,
       size: fontSize,
       font,
       color: rgb(color.r, color.g, color.b),
       opacity,
-      rotate: degrees(-45),
+      rotate,
     });
-    onProgress?.(10 + (i / pages.length) * 80);
+
+    onProgress?.(10 + ((i + 1) / pages.length) * 80);
   }
 
   onProgress?.(95, 'Menyimpan hasil...');
@@ -50,7 +122,9 @@ export async function watermarkPDF(
   return { files: [out] };
 }
 
-// ============ SIGN_PDF ============
+// ============================================================================
+// SIGN_PDF (TIDAK BERUBAH)
+// ============================================================================
 export async function signPDF(
   files: FileInput[],
   options: ProcessOptions,
@@ -58,13 +132,6 @@ export async function signPDF(
 ): Promise<ProcessResult> {
   assert(files.length === 1, 'Sign hanya 1 file');
 
-  // ✅ FIX: pindahkan ke variabel lokal agar TypeScript bisa
-  // mempersempit `ArrayBuffer | Uint8Array | undefined`
-  // menjadi `ArrayBuffer | Uint8Array` setelah `assert`.
-  //
-  // Alasan: assertion function (`asserts condition`) hanya
-  // mempersempit variabel lokal, BUKAN property access seperti
-  // `options.signatureImage`.
   const sigInput = options.signatureImage;
   assert(sigInput, 'Signature image wajib', 'NO_SIGNATURE');
 
@@ -72,7 +139,6 @@ export async function signPDF(
   const doc = await loadPDF(files[0]);
   const pages = doc.getPages();
 
-  // `sigInput` sekarang bertipe `ArrayBuffer | Uint8Array` (tanpa undefined)
   const sigBytes = toUint8(sigInput);
 
   onProgress?.(20, 'Menyiapkan tanda tangan...');
@@ -106,7 +172,9 @@ export async function signPDF(
   return { files: [out] };
 }
 
-// ============ EDIT_PDF ============
+// ============================================================================
+// EDIT_PDF (TIDAK BERUBAH)
+// ============================================================================
 export async function editPDF(
   files: FileInput[],
   options: ProcessOptions,

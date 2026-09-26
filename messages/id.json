@@ -1,14 +1,11 @@
 {
   "nav": {
-    "combinePdf": "Gabung PDF",
-    "separatePdf": "Pisah PDF",
+    "docs": "Dokumentasi",
     "compressPdf": "Kompres PDF",
     "pdfConversion": "Konversi PDF",
     "allPdfTools": "Semua Alat PDF",
-    "signIn": "Masuk",
-    "getStarted": "Mulai",
-    "theme": "Tema",
-    "language": "Bahasa"
+    "signInWithGoogle": "Masuk dengan Google",
+    "theme": "Tema"
   },
   "languageSwitcher": {
     "label": "Ganti bahasa",

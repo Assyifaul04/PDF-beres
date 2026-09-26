@@ -1,5 +1,6 @@
 // lib/processors/constants.ts
-import type { PDFTool, ServerOnlyTool, ClientTool } from './types';
+import type { PDFTool, ServerOnlyTool, ClientTool, ProcessOptions } from './types';
+import type { ToolSettings } from '@/lib/tools/settings';
 
 export const PDF_MIME = 'application/pdf' as const;
 export const MAX_FILE_SIZE = 100 * 1024 * 1024;
@@ -51,14 +52,9 @@ export const TOOL_REQUIREMENTS: Record<PDFTool, ToolRequirement> = {
 };
 
 // ============================================================================
-// SERVER-ONLY SET (type-narrowing source of truth)
+// SERVER-ONLY SET
 // ============================================================================
 
-/**
- * Daftar tool server-only sebagai Set, dipakai oleh isServerOnlyTool()
- * sebagai type guard. WAJIB sinkron dengan union `ServerOnlyTool` di types.ts
- * dan dengan `case` di index.server.ts.
- */
 const SERVER_ONLY_SET: ReadonlySet<PDFTool> = new Set<PDFTool>([
   'WORD_TO_PDF',
   'POWERPOINT_TO_PDF',
@@ -71,17 +67,9 @@ const SERVER_ONLY_SET: ReadonlySet<PDFTool> = new Set<PDFTool>([
   'REPAIR_PDF',
 ]);
 
-/**
- * Type guard: mempersempit PDFTool → ClientTool.
- * Kebalikan dari isServerOnlyTool.
- */
 export function isClientTool(tool: PDFTool): tool is ClientTool {
   return !SERVER_ONLY_SET.has(tool);
 }
-
-// ============================================================================
-// HELPERS
-// ============================================================================
 
 const IMAGE_MIME_SET: ReadonlySet<string> = new Set(IMAGE_MIMES);
 
@@ -93,12 +81,6 @@ export function isPdfMime(mime: string): boolean {
   return mime === PDF_MIME;
 }
 
-/**
- * Type guard: mempersempit PDFTool → ServerOnlyTool.
- * Setelah `if (!isServerOnlyTool(tool)) throw ...`, TypeScript tahu
- * `tool` hanya berisi tool server-only, sehingga switch yang exhaustive
- * akan menghasilkan `never` di default.
- */
 export function isServerOnlyTool(tool: PDFTool): tool is ServerOnlyTool {
   return SERVER_ONLY_SET.has(tool);
 }
@@ -109,4 +91,100 @@ export function formatBytes(bytes: number): string {
   if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(2)} MB`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(2)} KB`;
   return `${bytes} B`;
+}
+
+// ============================================================================
+// TOOLSETTINGS → PROCESSOPTIONS BRIDGE  ⭐ (BARU)
+// ============================================================================
+
+/**
+ * Konversi ToolSettings (dari UI) → ProcessOptions (dari processor).
+ *
+ * PENTING: Nama properti antara ToolSettings dan ProcessOptions BERBEDA.
+ * Fungsi ini menjembatani keduanya agar setting user sampai ke processor.
+ */
+export function toolSettingsToProcessOptions(
+  tool: PDFTool,
+  settings: ToolSettings
+): ProcessOptions {
+  switch (tool) {
+    case 'COMPRESS_PDF':
+      return {
+        compressionLevel: settings.compressionLevel ?? 'recommended',
+      };
+
+    case 'SPLIT_PDF':
+      return {
+        ranges: settings.pageRanges ?? '1-5',
+      };
+
+    case 'ROTATE_PDF':
+      return {
+        rotation: settings.rotationAngle ?? 90,
+      };
+
+    case 'WATERMARK_PDF':
+      return {
+        text: settings.watermarkText ?? 'CONFIDENTIAL',
+        position: settings.watermarkPosition ?? 'center',
+        opacity: settings.watermarkOpacity ?? 0.5,
+        fontSize: settings.watermarkFontSize ?? 32,
+      };
+
+    case 'PAGE_NUMBERS':
+      return {
+        position: settings.pageNumberPosition ?? 'bottom-center',
+        format: settings.pageNumberFormat ?? 'page_n',
+        startNumber: settings.startPageNumber ?? 1,
+      };
+
+    case 'JPG_TO_PDF':
+      return {
+        pageSize: (settings.pageSize?.toUpperCase() as 'A4' | 'LETTER' | 'FIT') ?? 'A4',
+        orientation:
+          settings.orientation === 'auto'
+            ? 'portrait'
+            : (settings.orientation ?? 'portrait'),
+        margin:
+          settings.marginSize === 'none' ? 0
+          : settings.marginSize === 'big' ? 40
+          : 20,
+      };
+
+    case 'PDF_TO_JPG':
+      return {
+        dpi:
+          settings.jpgQuality === 'high' ? 300
+          : settings.jpgQuality === 'medium' ? 150
+          : 72,
+      };
+
+    case 'SIGN_PDF':
+      return {
+        text: settings.signName ?? '',
+        position: settings.signPosition ?? 'bottom-right',
+      };
+
+    case 'PROTECT_PDF':
+    case 'UNLOCK_PDF':
+      return {
+        password: settings.password ?? '',
+      };
+
+    case 'HTML_TO_PDF':
+      return {
+        html: '',
+        pageSize: (settings.htmlPageSize?.toUpperCase() as 'A4' | 'LETTER') ?? 'A4',
+      };
+
+    case 'PDF_TO_WORD':
+    case 'PDF_TO_EXCEL':
+    case 'PDF_TO_POWERPOINT':
+      return {
+        format: settings.outputFormat,
+      };
+
+    default:
+      return {};
+  }
 }

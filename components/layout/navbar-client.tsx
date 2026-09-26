@@ -5,10 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Menu, X } from "lucide-react";
+import { Menu, X, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { GoogleButton } from "@/components/layout/google-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { NavDropdown } from "@/components/menu/nav-dropdown";
 import { NavDropdownMobile } from "@/components/menu/nav-dropdown-mobile";
@@ -55,22 +56,17 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
           </Link>
 
           <ul className="hidden items-center gap-6 md:flex">
+            {/* ✅ Tombol Docs menggantikan Combine PDF & Separate PDF */}
             <li>
               <Link
-                href="/combine-pdf"
-                className="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
+                href="/docs"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                {t("combinePdf")}
+                <FileText className="h-4 w-4" />
+                {t("docs")}
               </Link>
             </li>
-            <li>
-              <Link
-                href="/separate-pdf"
-                className="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {t("separatePdf")}
-              </Link>
-            </li>
+
             <li>
               <Link
                 href="/compress-pdf"
@@ -104,30 +100,18 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
           </ul>
         </div>
 
-        {/* KANAN: Language + Theme + CTA (avatar) */}
+        {/* KANAN: Language + Theme + Auth */}
         <div className="hidden items-center gap-3 md:flex">
-          {/* ✅ Language switcher — di sebelah kanan avatar */}
           <LanguageSwitcher />
-
           <ThemeToggle />
 
           {isLoggedIn ? (
             <UserMenu user={session.user!} />
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="whitespace-nowrap text-sm text-muted-foreground hover:text-foreground"
-              >
-                {t("signIn")}
-              </Link>
-              <Link
-                href="/signup"
-                className="whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                {t("getStarted")}
-              </Link>
-            </>
+            <GoogleButton
+              label={t("signInWithGoogle")}
+              callbackUrl="/"
+            />
           )}
         </div>
 
@@ -141,7 +125,7 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
         </button>
       </nav>
 
-      {/* Mobile menu — scrollable */}
+      {/* Mobile menu */}
       <div
         className={cn(
           "overflow-y-auto border-t transition-all md:hidden",
@@ -156,31 +140,24 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
             {t("theme")}
           </span>
           <div className="flex items-center gap-2">
-            {/* ✅ Language switcher juga di mobile */}
             <LanguageSwitcher />
             <ThemeToggle />
           </div>
         </div>
 
         <ul className="space-y-1 px-4 py-4">
+          {/* ✅ Tombol Docs menggantikan Combine PDF & Separate PDF */}
           <li>
             <Link
-              href="/combine-pdf"
+              href="/docs"
               onClick={() => setOpen(false)}
-              className="block rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              {t("combinePdf")}
+              <FileText className="h-4 w-4" />
+              {t("docs")}
             </Link>
           </li>
-          <li>
-            <Link
-              href="/separate-pdf"
-              onClick={() => setOpen(false)}
-              className="block rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              {t("separatePdf")}
-            </Link>
-          </li>
+
           <li>
             <Link
               href="/compress-pdf"
@@ -230,22 +207,11 @@ export function NavbarClient({ session, pdfColumns, allToolColumns }: Props) {
               <UserMenu user={session.user!} />
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="rounded-lg border px-4 py-2 text-center text-sm font-medium hover:bg-muted"
-              >
-                {t("signIn")}
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setOpen(false)}
-                className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground hover:opacity-90"
-              >
-                {t("getStarted")}
-              </Link>
-            </div>
+            <GoogleButton
+              label={t("signInWithGoogle")}
+              callbackUrl="/"
+              fullWidth
+            />
           )}
         </div>
       </div>

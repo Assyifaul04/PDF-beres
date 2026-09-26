@@ -29,11 +29,6 @@ export type PDFTool =
 
 /**
  * Subset tool yang HANYA boleh jalan di server.
- * Dipakai untuk type-narrowing di runPDFToolServer.
- *
- * PENTING: daftar ini harus sinkron dengan `SERVER_ONLY_SET`
- * di `lib/processors/constants.ts` dan dengan `case` di
- * `lib/processors/index.server.ts`.
  */
 export type ServerOnlyTool =
   | 'WORD_TO_PDF'
@@ -46,23 +41,12 @@ export type ServerOnlyTool =
   | 'UNLOCK_PDF'
   | 'REPAIR_PDF';
 
-  /**
- * Subset tool yang boleh jalan di client (browser).
- * Didefinisikan sebagai komplemen dari ServerOnlyTool,
- * sehingga jika Anda menambah tool server-only baru,
- * ClientTool otomatis ikut menyesuaikan.
- */
 export type ClientTool = Exclude<PDFTool, ServerOnlyTool>;
 
 // ============================================================================
 // PROGRESS
 // ============================================================================
 
-/**
- * Callback progress yang dipakai di semua processor (client & server).
- * @param pct  0–100
- * @param message pesan opsional untuk UI
- */
 export type ProgressFn = (pct: number, message?: string) => void;
 
 // ============================================================================
@@ -77,6 +61,18 @@ export interface FileInput {
 }
 
 // ============================================================================
+// COMPRESSION LEVEL
+// ============================================================================
+
+/**
+ * Tingkat kompresi untuk tool COMPRESS_PDF.
+ * - "extreme"     : Kompresi paling agresif (gambar di-downscale ke 72 DPI)
+ * - "recommended" : Keseimbangan optimal (gambar di-downscale ke 150 DPI)
+ * - "low"         : Kualitas tertinggi (gambar tidak di-downscale)
+ */
+export type CompressionLevel = 'extreme' | 'recommended' | 'low';
+
+// ============================================================================
 // OPTIONS
 // ============================================================================
 
@@ -87,7 +83,7 @@ export interface ProcessOptions {
   rotation?: 90 | 180 | 270;
   position?:
     | 'bottom-center' | 'bottom-right' | 'bottom-left'
-    | 'top-center' | 'top-right' | 'top-left';
+    | 'top-center' | 'top-right' | 'top-left'| 'center';
   startNumber?: number;
   fontSize?: number;
   format?: string;
@@ -120,6 +116,10 @@ export interface ProcessOptions {
   pageSize?: 'A4' | 'LETTER' | 'FIT';
   margin?: number;
   orientation?: 'portrait' | 'landscape';
+
+  // ===== TAMBAHKAN INI =====
+  /** Tingkat kompresi untuk tool COMPRESS_PDF */
+  compressionLevel?: CompressionLevel;
 }
 
 // ============================================================================

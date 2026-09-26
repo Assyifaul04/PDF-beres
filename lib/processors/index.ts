@@ -1,7 +1,6 @@
 // lib/processors/index.ts
 /**
  * ⚠️ FILE INI HANYA UNTUK CLIENT-SIDE PROCESSING.
- * Untuk server-side, gunakan `@/lib/processors/index.server`.
  */
 import type {
   PDFTool,
@@ -11,16 +10,16 @@ import type {
   ProcessResult,
   ProgressFn,
 } from './types';
+import type { ToolSettings } from '@/lib/tools/settings';
 import { PDFProcessingError } from './errors';
 import {
   TOOL_REQUIREMENTS,
   MAX_FILES,
   isClientTool,
+  toolSettingsToProcessOptions,  // ⭐ import bridge
 } from './constants';
 
-// ============================================================================
-// CLIENT PROCESSORS (aman untuk browser)
-// ============================================================================
+// Client processors
 import {
   mergePDFs,
   splitPDF,
@@ -44,8 +43,16 @@ export interface RunOptions extends ProcessOptions {
   onProgress?: ProgressFn;
 }
 
+/**
+ * Opsi untuk entry point yang menerima ToolSettings langsung dari UI.
+ */
+export interface RunWithSettingsOptions {
+  settings: ToolSettings;
+  onProgress?: ProgressFn;
+}
+
 // ============================================================================
-// MAIN ROUTER — CLIENT ONLY
+// MAIN ROUTER (internal) — menerima ProcessOptions mentah
 // ============================================================================
 
 export async function runPDFTool(
@@ -55,7 +62,6 @@ export async function runPDFTool(
 ): Promise<ProcessResult> {
   const { onProgress, ...opts } = options;
 
-  // Guard + narrowing: setelah blok ini `tool` bertipe ClientTool.
   if (!isClientTool(tool)) {
     throw new PDFProcessingError(
       `Tool ${tool} hanya dapat dijalankan di server. ` +
@@ -65,47 +71,34 @@ export async function runPDFTool(
   }
 
   const clientTool: ClientTool = tool;
-
   validateClientInput(clientTool, files, options);
 
   try {
     switch (clientTool) {
       case 'MERGE_PDF':
         return await mergePDFs(files, onProgress);
-
       case 'SPLIT_PDF':
         return await splitPDF(files, opts, onProgress);
-
       case 'COMPRESS_PDF':
         return await compressPDF(files, opts, onProgress);
-
       case 'ROTATE_PDF':
         return await rotatePDF(files, opts, onProgress);
-
       case 'PAGE_NUMBERS':
         return await addPageNumbers(files, opts, onProgress);
-
       case 'ORGANIZE_PDF':
         return await organizePDF(files, opts, onProgress);
-
       case 'JPG_TO_PDF':
         return await jpgToPDF(files, opts, onProgress);
-
       case 'PDF_TO_JPG':
         return await pdfToJPG(files, opts, onProgress);
-
       case 'HTML_TO_PDF':
         return await htmlToPDF(files, opts, onProgress);
-
       case 'WATERMARK_PDF':
         return await watermarkPDF(files, opts, onProgress);
-
       case 'SIGN_PDF':
         return await signPDF(files, opts, onProgress);
-
       case 'EDIT_PDF':
         return await editPDF(files, opts, onProgress);
-
       default:
         return assertNever(
           clientTool,
@@ -118,6 +111,28 @@ export async function runPDFTool(
     const stack = e instanceof Error ? e.stack : undefined;
     throw new PDFProcessingError(message, 'UNEXPECTED_ERROR', { stack });
   }
+}
+
+// ============================================================================
+// ⭐ ENTRY POINT UTAMA — dari UI (menerima ToolSettings)
+// ============================================================================
+
+/**
+ * Entry point yang dipakai oleh komponen React.
+ * Otomatis mengonversi ToolSettings → ProcessOptions.
+ */
+export async function runPDFToolWithSettings(
+  tool: PDFTool,
+  files: FileInput[],
+  options: RunWithSettingsOptions
+): Promise<ProcessResult> {
+  const { settings, onProgress } = options;
+  const processOptions = toolSettingsToProcessOptions(tool, settings);
+
+  return runPDFTool(tool, files, {
+    ...processOptions,
+    onProgress,
+  });
 }
 
 // ============================================================================

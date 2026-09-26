@@ -2,16 +2,21 @@
 "use client";
 
 import * as React from "react";
-import { X, Settings, ArrowRight, FileText, Loader2 } from "lucide-react";
+import { ToolType } from "@prisma/client";
+import {
+  X,
+  ArrowRight,
+  Loader2,
+  Plus,
+  Info,
+  RotateCw,
+  FileWarning,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ToolControlsPanel } from "./tool-controls-panel";
+import { ToolSettings, getDefaultToolSettings } from "@/lib/tools/settings";
+import { PdfPreview } from "@/components/process/pdf-preview";
 
 export interface UploadedFile {
   fileId: string;
@@ -19,168 +24,238 @@ export interface UploadedFile {
   originalName: string;
   sizeBytes: string;
   mimeType: string;
-}
-
-interface OutputOption {
-  value: string;
-  label: string;
+  url?: string;
+  rotation?: number;
 }
 
 interface Props {
-  file: UploadedFile;
-  /** Opsi output (misal PNG, JPG untuk convert) */
-  outputOptions?: OutputOption[];
-  /** Nilai output yang dipilih */
-  outputValue?: string;
-  /** Callback saat output berubah */
-  onOutputChange?: (value: string) => void;
-  /** Callback saat tombol X diklik */
-  onRemove: () => void;
-  /** Callback saat tombol Settings diklik */
-  onSettings?: () => void;
-  /** Callback saat tombol "Mengubah" diklik */
-  onProcess: () => void;
-  /** Loading state saat process */
+  files: UploadedFile[];
+  title: string;
+  toolType?: ToolType;
+  onRemove: (fileId: string) => void;
+  onReorder: (files: UploadedFile[]) => void;
+  onRotate?: (fileId: string) => void;
+  onProcess: (settings: ToolSettings) => void;
+  onAddMore: () => void;
   isProcessing?: boolean;
-  /** Label tombol process (default: "Mengubah") */
   processLabel?: string;
-  /** Total file dalam group (untuk label bawah) */
-  totalFiles?: number;
   className?: string;
 }
 
-export function FileReadyCard({
-  file,
-  outputOptions,
-  outputValue,
-  onOutputChange,
+export function FileReadyWorkspace({
+  files,
+  title,
+  toolType = "MERGE_PDF",
   onRemove,
-  onSettings,
+  onReorder,
+  onRotate,
   onProcess,
+  onAddMore,
   isProcessing = false,
-  processLabel = "Mengubah",
-  totalFiles = 1,
+  processLabel = "Proses Dokumen",
   className,
 }: Props) {
-  const hasOutput = !!outputOptions && outputOptions.length > 0;
+  const [toolSettings, setToolSettings] = React.useState<ToolSettings>(() =>
+    getDefaultToolSettings(toolType)
+  );
+
+  const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    setToolSettings(getDefaultToolSettings(toolType));
+  }, [toolType]);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newFiles = [...files];
+    const draggedItem = newFiles[draggedIndex];
+
+    newFiles.splice(draggedIndex, 1);
+    newFiles.splice(index, 0, draggedItem);
+
+    setDraggedIndex(index);
+    onReorder(newFiles);
+  };
+
+  const handleDragEnd = () => setDraggedIndex(null);
 
   return (
     <div
       className={cn(
-        "w-full overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm",
+        "flex min-h-[560px] w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-md transition-colors sm:flex-row",
         className
       )}
     >
-      {/* ================= Bagian atas: info file + kontrol ================= */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4 sm:flex-nowrap sm:p-5">
-        {/* Kiri: ikon + nama + ukuran */}
-        <div className="flex min-w-0 flex-1 basis-full items-center gap-3.5 sm:basis-auto">
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
-            aria-hidden="true"
-          >
-            <FileText className="h-5 w-5" />
-          </div>
-
-          <div className="min-w-0">
-            <p
-              className="truncate text-sm font-semibold leading-tight"
-              title={file.originalName}
-            >
-              {file.originalName}
-            </p>
-            <p className="mt-1 text-xs tabular-nums text-muted-foreground">
-              {formatSize(Number(file.sizeBytes))}
-            </p>
-          </div>
-        </div>
-
-        {/* Kanan: output select + pengaturan + hapus */}
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0">
-          {hasOutput && (
-            <div className="mr-1 flex items-center gap-2">
-              <span className="hidden text-sm text-muted-foreground sm:inline">
-                Keluaran
-              </span>
-              <Select
-                value={outputValue}
-                onValueChange={(v) => onOutputChange?.(v ?? "")}
-              >
-                <SelectTrigger
-                  className="h-9 w-[104px] font-medium"
-                  aria-label="Format keluaran"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {outputOptions!.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {onSettings && (
-            <button
-              type="button"
-              onClick={onSettings}
-              aria-label="Pengaturan"
-              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Settings className="h-[18px] w-[18px]" />
-            </button>
-          )}
-
+      {/* ================= AREA FILE (KIRI) ================= */}
+      <div className="relative flex-1 overflow-y-auto bg-muted/30 p-6 sm:p-8">
+        {/* Floating Add Button */}
+        <div className="absolute right-6 top-6 z-10">
           <button
             type="button"
-            onClick={onRemove}
-            aria-label="Hapus file"
-            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={onAddMore}
+            className="relative flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-red-700 active:scale-95"
+            title="Tambah File"
           >
-            <X className="h-[18px] w-[18px]" />
+            <Plus className="h-6 w-6" />
+            {files.length > 0 && (
+              <span className="absolute -left-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-foreground text-[10px] font-bold text-background">
+                {files.length}
+              </span>
+            )}
           </button>
         </div>
+
+        {files.length === 0 ? (
+          <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+            <FileWarning className="h-10 w-10 opacity-40" />
+            <p className="max-w-[220px] text-sm">
+              Belum ada file. Tekan tombol{" "}
+              <span className="font-semibold text-foreground">+</span> untuk
+              menambahkan dokumen.
+            </p>
+          </div>
+        ) : (
+          /* ================================================================= */
+          /* GRID MASONRY — kartu lebar dengan preview PDF penuh              */
+          /* ================================================================= */
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-6 pt-2">
+            {files.map((file, index) => {
+              const pdfUrl = file.url || `/api/files/${file.fileId}`;
+
+              return (
+                <div
+                  key={file.fileId}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={cn(
+                    "group relative cursor-grab select-none transition-all duration-200 active:cursor-grabbing",
+                    draggedIndex === index && "scale-95 opacity-40"
+                  )}
+                >
+                  {/* FLOATING ACTION BUTTONS */}
+                  <div className="absolute right-2 top-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    {onRotate && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRotate(file.fileId);
+                        }}
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 active:scale-90"
+                        title="Rotate"
+                      >
+                        <RotateCw className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(file.fileId);
+                      }}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-muted-foreground/80 text-white shadow-md hover:bg-red-500 active:scale-90"
+                      title="Hapus File"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* NOMOR URUT */}
+                  <div className="absolute -left-2 -top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background shadow">
+                    {index + 1}
+                  </div>
+
+                  {/* ============================================== */}
+                  {/* CARD DENGAN PREVIEW PDF PENUH                  */}
+                  {/* ============================================== */}
+                  <div className="flex flex-col rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:border-primary hover:shadow-md">
+                    {/* Preview PDF — pakai PdfPreview bukan PdfThumbnail */}
+                    <div className="w-full overflow-hidden rounded-lg border border-border/50 bg-muted/30">
+                      <PdfPreview
+                        url={pdfUrl}
+                        rotation={file.rotation || 0}
+                        containerWidth={220}
+                        showPageCount
+                      />
+                    </div>
+
+                    {/* Nama & ukuran */}
+                    <div className="mt-3 flex w-full flex-col">
+                      <span
+                        className="line-clamp-1 text-center text-xs font-semibold text-foreground"
+                        title={file.originalName}
+                      >
+                        {file.originalName}
+                      </span>
+                      <span className="text-center text-[10px] text-muted-foreground">
+                        {formatSize(Number(file.sizeBytes))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* ================= Bagian bawah: action bar ================= */}
-      <div className="flex items-center justify-between gap-3 border-t bg-muted/30 px-4 py-3 sm:px-5">
-        <span className="text-sm text-muted-foreground">
-          Menambahkan{" "}
-          <span className="font-medium tabular-nums text-foreground">
-            {totalFiles}
-          </span>{" "}
-          file
-        </span>
+      {/* ================= PANEL KONTROL SIDEBAR (KANAN) ================= */}
+      <div className="flex w-full shrink-0 flex-col border-t border-border bg-card sm:w-[320px] sm:border-l sm:border-t-0">
+        <div className="flex items-center justify-center border-b border-border p-5">
+          <h2 className="text-xl font-bold uppercase tracking-wide text-foreground">
+            {title}
+          </h2>
+        </div>
 
-        <Button
-          type="button"
-          onClick={onProcess}
-          disabled={isProcessing}
-          className="h-10 gap-2 px-5 text-sm font-semibold"
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              Memproses...
-            </>
-          ) : (
-            <>
-              {processLabel}
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </Button>
+        <div className="flex flex-1 flex-col space-y-6 overflow-y-auto p-5">
+          <div className="flex items-start gap-3 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-blue-600 dark:text-blue-400">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <p className="leading-relaxed">
+              Tekan dan tahan file untuk menggeser posisi file sesuai urutan
+              yang diinginkan.
+            </p>
+          </div>
+
+          <ToolControlsPanel
+            toolType={toolType}
+            settings={toolSettings}
+            onChange={setToolSettings}
+          />
+        </div>
+
+        <div className="border-t border-border bg-muted/20 p-5">
+          <Button
+            type="button"
+            onClick={() => onProcess(toolSettings)}
+            disabled={isProcessing || files.length === 0}
+            className="h-14 w-full gap-2 rounded-lg bg-red-600 text-lg font-bold text-white transition-all hover:bg-red-700 hover:shadow-md active:scale-[0.98] disabled:opacity-50"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Memproses...
+              </>
+            ) : (
+              <>
+                {processLabel}
+                <ArrowRight className="h-5 w-5" />
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
-
-// ============================================================================
-// HELPER
-// ============================================================================
 
 function formatSize(bytes: number): string {
   if (bytes >= 1024 * 1024) {

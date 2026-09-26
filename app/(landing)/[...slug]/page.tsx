@@ -1,4 +1,3 @@
-// app/(landing)/[...slug]/page.tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -50,11 +49,9 @@ export default async function ToolPage({ params }: { params: Params }) {
   const { slug } = await params;
   const toolSlug = getLastSegment(slug);
 
-  // 1. Ambil config dari kode
   const config = getToolConfig(toolSlug);
   if (!config) notFound();
 
-  // 2. Ambil menu dari DB (breadcrumb & title override)
   const menu = await prisma.toolMenu.findFirst({
     where: {
       OR: [{ slug: toolSlug }, { toolType: config.toolType }],
@@ -65,22 +62,19 @@ export default async function ToolPage({ params }: { params: Params }) {
     },
   });
 
-  // 3. Ambil setting admin
   const general = await getSettings("general");
   const maxSize = general.maxUploadMB * 1024 * 1024;
 
-  // 4. Judul & deskripsi
   const title = menu?.title ?? config.title;
   const description = menu?.description ?? config.description;
 
-  // 5. Output options & label
   const outputOptions = getOutputOptions(config.toolType);
   const processLabel = getProcessLabel(config.toolType);
 
   return (
     <>
       {/* BREADCRUMB */}
-      <nav aria-label="Breadcrumb" className="border-b bg-background">
+      <nav aria-label="Breadcrumb" className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <ol className="flex flex-wrap items-center gap-1.5 py-3 text-sm">
             <li>
@@ -91,11 +85,9 @@ export default async function ToolPage({ params }: { params: Params }) {
                 Beranda
               </Link>
             </li>
-
             <li aria-hidden="true">
               <CaretRightIcon className="h-3 w-3 text-muted-foreground/60" />
             </li>
-
             {menu?.category && (
               <>
                 <li>
@@ -108,7 +100,6 @@ export default async function ToolPage({ params }: { params: Params }) {
                 </li>
               </>
             )}
-
             <li>
               <span aria-current="page" className="font-medium text-foreground">
                 {title}
@@ -118,38 +109,35 @@ export default async function ToolPage({ params }: { params: Params }) {
         </div>
       </nav>
 
-      {/* HERO */}
-      <section className="border-b bg-muted/30">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-          <LandingHero
-            slug={config.slug}
-            title={title}
-            description={description}
-            accept={config.accept}
-            multiple={config.multiple}
-            minFiles={config.minFiles}
-            maxFiles={config.maxFiles}
-            toolType={config.toolType}
-            maxSize={maxSize}
-            outputOptions={outputOptions}
-            processLabel={processLabel}
-          />
-        </div>
+      {/* HERO SECTION - Menggunakan bg-background & border-border agar selaras theme toggle */}
+      <section className="w-full border-b border-border bg-background">
+        <LandingHero
+          slug={config.slug}
+          title={title}
+          description={description}
+          accept={config.accept}
+          multiple={config.multiple}
+          minFiles={config.minFiles}
+          maxFiles={config.maxFiles}
+          toolType={config.toolType}
+          maxSize={maxSize}
+          outputOptions={outputOptions}
+          processLabel={processLabel}
+        />
       </section>
 
       {/* CARA PAKAI */}
-      <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
-        <h2 className="text-2xl font-bold tracking-tight">
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">
           Cara pakai {title}
         </h2>
-
         <ol className="mt-8 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((step, i) => (
             <li key={step.title} className="border-t-2 border-primary/20 pt-4">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold tabular-nums text-primary-foreground">
                 {i + 1}
               </span>
-              <h3 className="mt-3 text-sm font-semibold">{step.title}</h3>
+              <h3 className="mt-3 text-sm font-semibold text-foreground">{step.title}</h3>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 {step.text}
               </p>

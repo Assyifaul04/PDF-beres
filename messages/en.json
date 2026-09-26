@@ -1,14 +1,11 @@
 {
   "nav": {
-    "combinePdf": "Combine PDF",
-    "separatePdf": "Separate PDF",
+    "docs": "Docs",
     "compressPdf": "Compress PDF",
     "pdfConversion": "PDF Conversion",
     "allPdfTools": "All PDF Tools",
-    "signIn": "Sign in",
-    "getStarted": "Get Started",
-    "theme": "Theme",
-    "language": "Language"
+    "signInWithGoogle": "Sign in with Google",
+    "theme": "Theme"
   },
   "languageSwitcher": {
     "label": "Change language",

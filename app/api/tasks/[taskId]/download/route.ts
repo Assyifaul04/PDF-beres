@@ -1,4 +1,3 @@
-// app/api/tasks/[taskId]/download/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -91,14 +90,17 @@ export async function GET(_req: NextRequest, { params }: { params: Params }) {
     }
 
     // ================================================================
-    // CASE 1: Single file → redirect ke signed URL
+    // CASE 1: Single file → redirect ke signed URL dengan opsi download
     // ================================================================
     if (validFiles.length === 1) {
       const file = validFiles[0].file;
 
+      // MENAMBAHKAN { download: file.originalName } AGAR FILE MASUK KE DOWNLOAD MANAGER (Ctrl + J)
       const { data, error } = await supabaseAdmin.storage
         .from(process.env.SUPABASE_BUCKET ?? "beres-files")
-        .createSignedUrl(file.fileKey, SIGNED_URL_TTL_SECONDS);
+        .createSignedUrl(file.fileKey, SIGNED_URL_TTL_SECONDS, {
+          download: file.originalName,
+        });
 
       if (error || !data?.signedUrl) {
         console.error("[download] signed URL error:", error);
@@ -116,7 +118,9 @@ export async function GET(_req: NextRequest, { params }: { params: Params }) {
       validFiles.map(async (o) => {
         const { data, error } = await supabaseAdmin.storage
           .from(process.env.SUPABASE_BUCKET ?? "beres-files")
-          .createSignedUrl(o.file.fileKey, SIGNED_URL_TTL_SECONDS);
+          .createSignedUrl(o.file.fileKey, SIGNED_URL_TTL_SECONDS, {
+            download: o.file.originalName,
+          });
 
         return {
           id: o.file.id,

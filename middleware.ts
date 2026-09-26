@@ -7,32 +7,24 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    // ==========================================
-    // ADMIN ROUTING
-    // ==========================================
-
-    // Admin buka "/" → redirect ke /admin/dashboard
+    // Admin routing
     if (pathname === "/" && token?.role === "ADMIN") {
       return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
-
-    // Admin buka /user/* → redirect ke /admin/dashboard
     if (pathname.startsWith("/user") && token?.role === "ADMIN") {
       return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
-
-    // ==========================================
-    // USER ROUTING
-    // ==========================================
-
-    // User biasa (bukan admin) buka /admin/* → redirect ke "/"
     if (pathname.startsWith("/admin") && token?.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
-    // ==========================================
-    // ANTI-CACHE (untuk route protected)
-    // ==========================================
+    // ⚠️ KRITIS: JANGAN intercept /api/* — biarkan route handle sendiri
+    // Middleware anti-cache akan merusak response file (PDF, dll.)
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.next();
+    }
+
+    // Anti-cache hanya untuk halaman (HTML)
     const response = NextResponse.next();
     response.headers.set(
       "Cache-Control",
@@ -47,22 +39,21 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Public paths — boleh diakses tanpa login
+        // ✅ Izinkan SEMUA API route — mereka handle auth sendiri
+        if (pathname.startsWith("/api/")) return true;
+
         const publicPaths = ["/", "/login", "/signup", "/terms", "/privacy"];
         const isPublic = publicPaths.some(
           (p) => pathname === p || pathname.startsWith(p + "/")
         );
         if (isPublic) return true;
 
-        // Wajib login
         if (!token) return false;
 
-        // /admin/* hanya untuk ADMIN
         if (pathname.startsWith("/admin")) {
           return token.role === "ADMIN";
         }
 
-        // Route lain yang butuh login → user biasa boleh
         return true;
       },
     },
@@ -74,6 +65,7 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|gif|webp)$).*)",
+    // ⚠️ WAJIB: exclude "api" (bukan hanya "api/auth") agar /api/files bebas
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|gif|webp)$).*)",
   ],
 };
