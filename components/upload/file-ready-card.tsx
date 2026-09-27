@@ -89,21 +89,21 @@ export function FileReadyWorkspace({
   return (
     <div
       className={cn(
-        "flex min-h-[560px] w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-md transition-colors sm:flex-row",
+        "flex min-h-[560px] w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-md transition-colors lg:flex-row",
         className
       )}
     >
       {/* ================= AREA FILE (KIRI) ================= */}
-      <div className="relative flex-1 overflow-y-auto bg-muted/30 p-6 sm:p-8">
+      <div className="relative flex-1 overflow-y-auto bg-muted/30 p-4 sm:p-6 lg:p-8">
         {/* Floating Add Button */}
-        <div className="absolute right-6 top-6 z-10">
+        <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
           <button
             type="button"
             onClick={onAddMore}
-            className="relative flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-red-700 active:scale-95"
+            className="relative flex h-11 w-11 items-center justify-center rounded-full bg-red-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-red-700 active:scale-95 sm:h-12 sm:w-12"
             title="Tambah File"
           >
-            <Plus className="h-6 w-6" />
+            <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
             {files.length > 0 && (
               <span className="absolute -left-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-foreground text-[10px] font-bold text-background">
                 {files.length}
@@ -113,7 +113,7 @@ export function FileReadyWorkspace({
         </div>
 
         {files.length === 0 ? (
-          <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+          <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-3 text-center text-muted-foreground sm:min-h-[400px]">
             <FileWarning className="h-10 w-10 opacity-40" />
             <p className="max-w-[220px] text-sm">
               Belum ada file. Tekan tombol{" "}
@@ -122,10 +122,8 @@ export function FileReadyWorkspace({
             </p>
           </div>
         ) : (
-          /* ================================================================= */
-          /* GRID MASONRY — kartu dengan preview multi-format                  */
-          /* ================================================================= */
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-6 pt-2">
+          /* GRID MASONRY — responsive */
+          <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] lg:gap-6">
             {files.map((file, index) => {
               const pdfUrl = file.url || `/api/files/${file.fileId}`;
 
@@ -141,8 +139,8 @@ export function FileReadyWorkspace({
                     draggedIndex === index && "scale-95 opacity-40"
                   )}
                 >
-                  {/* FLOATING ACTION BUTTONS */}
-                  <div className="absolute right-2 top-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  {/* FLOATING ACTION BUTTONS — selalu tampil di mobile, hover di desktop */}
+                  <div className="absolute right-1.5 top-1.5 z-20 flex items-center gap-1 opacity-100 transition-opacity sm:right-2 sm:top-2 sm:opacity-0 sm:group-hover:opacity-100">
                     {onRotate && (
                       <button
                         type="button"
@@ -150,10 +148,10 @@ export function FileReadyWorkspace({
                           e.stopPropagation();
                           onRotate(file.fileId);
                         }}
-                        className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 active:scale-90"
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 active:scale-90 sm:h-7 sm:w-7"
                         title="Rotate"
                       >
-                        <RotateCw className="h-3.5 w-3.5" />
+                        <RotateCw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       </button>
                     )}
                     <button
@@ -162,23 +160,20 @@ export function FileReadyWorkspace({
                         e.stopPropagation();
                         onRemove(file.fileId);
                       }}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-muted-foreground/80 text-white shadow-md hover:bg-red-500 active:scale-90"
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground/80 text-white shadow-md hover:bg-red-500 active:scale-90 sm:h-7 sm:w-7"
                       title="Hapus File"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </button>
                   </div>
 
                   {/* NOMOR URUT */}
-                  <div className="absolute -left-2 -top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background shadow">
+                  <div className="absolute -left-1.5 -top-1.5 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background shadow sm:-left-2 sm:-top-2 sm:h-6 sm:w-6 sm:text-[11px]">
                     {index + 1}
                   </div>
 
-                  {/* ============================================== */}
-                  {/* CARD DENGAN PREVIEW MULTI-FORMAT               */}
-                  {/* ============================================== */}
-                  <div className="flex flex-col rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:border-primary hover:shadow-md">
-                    {/* Preview — PdfPreview auto-deteksi PDF/Image/DOCX/XLSX */}
+                  {/* CARD DENGAN PREVIEW */}
+                  <div className="flex flex-col rounded-xl border border-border bg-card p-2 shadow-sm transition-all hover:border-primary hover:shadow-md sm:p-3">
                     <div className="w-full overflow-hidden rounded-lg border border-border/50 bg-muted/30">
                       <PdfPreview
                         url={pdfUrl}
@@ -191,14 +186,14 @@ export function FileReadyWorkspace({
                     </div>
 
                     {/* Nama & ukuran */}
-                    <div className="mt-3 flex w-full flex-col">
+                    <div className="mt-2 flex w-full flex-col sm:mt-3">
                       <span
-                        className="line-clamp-1 text-center text-xs font-semibold text-foreground"
+                        className="line-clamp-1 text-center text-[11px] font-semibold text-foreground sm:text-xs"
                         title={file.originalName}
                       >
                         {file.originalName}
                       </span>
-                      <span className="text-center text-[10px] text-muted-foreground">
+                      <span className="text-center text-[9px] text-muted-foreground sm:text-[10px]">
                         {formatSize(Number(file.sizeBytes))}
                       </span>
                     </div>
@@ -211,14 +206,14 @@ export function FileReadyWorkspace({
       </div>
 
       {/* ================= PANEL KONTROL SIDEBAR (KANAN) ================= */}
-      <div className="flex w-full shrink-0 flex-col border-t border-border bg-card sm:w-[320px] sm:border-l sm:border-t-0">
-        <div className="flex items-center justify-center border-b border-border p-5">
-          <h2 className="text-xl font-bold uppercase tracking-wide text-foreground">
+      <div className="flex w-full shrink-0 flex-col border-t border-border bg-card lg:w-[320px] lg:border-l lg:border-t-0">
+        <div className="flex items-center justify-center border-b border-border p-4 lg:p-5">
+          <h2 className="text-lg font-bold uppercase tracking-wide text-foreground lg:text-xl">
             {title}
           </h2>
         </div>
 
-        <div className="flex flex-1 flex-col space-y-6 overflow-y-auto p-5">
+        <div className="flex flex-1 flex-col space-y-4 overflow-y-auto p-4 lg:space-y-6 lg:p-5">
           <div className="flex items-start gap-3 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-blue-600 dark:text-blue-400">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <p className="leading-relaxed">
@@ -234,12 +229,12 @@ export function FileReadyWorkspace({
           />
         </div>
 
-        <div className="border-t border-border bg-muted/20 p-5">
+        <div className="border-t border-border bg-muted/20 p-4 lg:p-5">
           <Button
             type="button"
             onClick={() => onProcess(toolSettings)}
             disabled={isProcessing || files.length === 0}
-            className="h-14 w-full gap-2 rounded-lg bg-red-600 text-lg font-bold text-white transition-all hover:bg-red-700 hover:shadow-md active:scale-[0.98] disabled:opacity-50"
+            className="h-12 w-full gap-2 rounded-lg bg-red-600 text-base font-bold text-white transition-all hover:bg-red-700 hover:shadow-md active:scale-[0.98] disabled:opacity-50 lg:h-14 lg:text-lg"
           >
             {isProcessing ? (
               <>

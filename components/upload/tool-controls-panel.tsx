@@ -46,7 +46,7 @@ export function ToolControlsPanel({
     /* ====================================================================== */
     case "COMPRESS_PDF":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <FileArchive className="h-4 w-4 text-red-500" />
             <span>Tingkat Kompresi</span>
@@ -75,7 +75,7 @@ export function ToolControlsPanel({
                 onClick={() =>
                   updateSetting("compressionLevel", option.id as any)
                 }
-                className={`w-full rounded-lg border p-3 text-left text-xs transition-all ${
+                className={`w-full rounded-lg border p-3 text-left text-xs transition-all active:scale-[0.99] ${
                   settings.compressionLevel === option.id
                     ? "border-red-500 bg-red-500/10 font-medium text-foreground"
                     : "border-border bg-card text-muted-foreground hover:bg-muted"
@@ -96,17 +96,17 @@ export function ToolControlsPanel({
     /* ====================================================================== */
     case "SPLIT_PDF":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Scissors className="h-4 w-4 text-red-500" />
             <span>Mode Pemisahan Halaman</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
             <button
               type="button"
               onClick={() => updateSetting("splitMode", "ranges")}
-              className={`rounded-md border p-2.5 text-center font-medium ${
+              className={`rounded-md border p-3 text-center font-medium transition-all active:scale-[0.98] sm:p-2.5 ${
                 settings.splitMode === "ranges"
                   ? "border-red-500 bg-red-500/10 text-foreground"
                   : "border-border text-muted-foreground hover:bg-muted"
@@ -117,7 +117,7 @@ export function ToolControlsPanel({
             <button
               type="button"
               onClick={() => updateSetting("splitMode", "single_pages")}
-              className={`rounded-md border p-2.5 text-center font-medium ${
+              className={`rounded-md border p-3 text-center font-medium transition-all active:scale-[0.98] sm:p-2.5 ${
                 settings.splitMode === "single_pages"
                   ? "border-red-500 bg-red-500/10 text-foreground"
                   : "border-border text-muted-foreground hover:bg-muted"
@@ -136,7 +136,7 @@ export function ToolControlsPanel({
                 value={settings.pageRanges || ""}
                 onChange={(e) => updateSetting("pageRanges", e.target.value)}
                 placeholder="misal: 1-5, 8"
-                className="bg-background text-xs"
+                className="bg-background text-sm sm:text-xs"
               />
             </div>
           )}
@@ -148,7 +148,7 @@ export function ToolControlsPanel({
     /* ====================================================================== */
     case "WATERMARK_PDF":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Type className="h-4 w-4 text-red-500" />
             <span>Pengaturan Watermark</span>
@@ -160,7 +160,7 @@ export function ToolControlsPanel({
               value={settings.watermarkText || ""}
               onChange={(e) => updateSetting("watermarkText", e.target.value)}
               placeholder="CONFIDENTIAL / RAHASIA"
-              className="bg-background text-xs"
+              className="bg-background text-sm sm:text-xs"
             />
           </div>
 
@@ -171,7 +171,7 @@ export function ToolControlsPanel({
               onChange={(e) =>
                 updateSetting("watermarkPosition", e.target.value as any)
               }
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground"
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground sm:py-2 sm:text-xs"
             >
               <option value="center">Tengah Halaman</option>
               <option value="top-left">Kiri Atas</option>
@@ -195,7 +195,7 @@ export function ToolControlsPanel({
               onChange={(e) =>
                 updateSetting("watermarkOpacity", parseFloat(e.target.value))
               }
-              className="w-full cursor-pointer accent-red-600"
+              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-red-600"
             />
           </div>
         </div>
@@ -208,7 +208,7 @@ export function ToolControlsPanel({
     case "UNLOCK_PDF": {
       const isProtect = toolType === "PROTECT_PDF";
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             {isProtect ? (
               <Lock className="h-4 w-4 text-red-500" />
@@ -229,7 +229,7 @@ export function ToolControlsPanel({
               value={settings.password || ""}
               onChange={(e) => updateSetting("password", e.target.value)}
               placeholder="Masukkan password..."
-              className="bg-background text-xs"
+              className="bg-background text-sm sm:text-xs"
             />
           </div>
         </div>
@@ -241,7 +241,7 @@ export function ToolControlsPanel({
     /* ====================================================================== */
     case "PAGE_NUMBERS":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Hash className="h-4 w-4 text-red-500" />
             <span>Format & Posisi Nomor Halaman</span>
@@ -254,7 +254,7 @@ export function ToolControlsPanel({
               onChange={(e) =>
                 updateSetting("pageNumberPosition", e.target.value as any)
               }
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground"
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground sm:py-2 sm:text-xs"
             >
               <option value="bottom-center">Bawah Tengah</option>
               <option value="bottom-right">Bawah Kanan</option>
@@ -271,7 +271,7 @@ export function ToolControlsPanel({
               onChange={(e) =>
                 updateSetting("pageNumberFormat", e.target.value as any)
               }
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground"
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground sm:py-2 sm:text-xs"
             >
               <option value="page_n">Halaman 1</option>
               <option value="n_of_total">1 dari N</option>
@@ -286,13 +286,13 @@ export function ToolControlsPanel({
     /* ====================================================================== */
     case "ROTATE_PDF":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <RotateCw className="h-4 w-4 text-red-500" />
             <span>Rotasi Dokumen</span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {[
               { angle: 90, label: "90° Kanan" },
               { angle: 180, label: "180° Balik" },
@@ -304,7 +304,7 @@ export function ToolControlsPanel({
                 onClick={() =>
                   updateSetting("rotationAngle", item.angle as any)
                 }
-                className={`rounded-md border py-3 text-center text-xs font-medium transition-all ${
+                className={`rounded-md border py-3 text-center text-xs font-medium transition-all active:scale-[0.98] ${
                   settings.rotationAngle === item.angle
                     ? "border-red-500 bg-red-500/10 font-bold text-foreground"
                     : "border-border text-muted-foreground hover:bg-muted"
@@ -322,7 +322,7 @@ export function ToolControlsPanel({
     /* ====================================================================== */
     case "JPG_TO_PDF":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <ImageIcon className="h-4 w-4 text-red-500" />
             <span>Tata Letak Halaman PDF</span>
@@ -330,11 +330,11 @@ export function ToolControlsPanel({
 
           <div className="space-y-1.5">
             <Label className="text-xs">Orientasi</Label>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => updateSetting("orientation", "portrait")}
-                className={`rounded border p-2 text-center ${
+                className={`rounded border p-3 text-center transition-all active:scale-[0.98] sm:p-2 ${
                   settings.orientation === "portrait"
                     ? "border-red-500 bg-red-500/10 font-bold"
                     : "border-border text-muted-foreground"
@@ -345,7 +345,7 @@ export function ToolControlsPanel({
               <button
                 type="button"
                 onClick={() => updateSetting("orientation", "landscape")}
-                className={`rounded border p-2 text-center ${
+                className={`rounded border p-3 text-center transition-all active:scale-[0.98] sm:p-2 ${
                   settings.orientation === "landscape"
                     ? "border-red-500 bg-red-500/10 font-bold"
                     : "border-border text-muted-foreground"
@@ -363,7 +363,7 @@ export function ToolControlsPanel({
               onChange={(e) =>
                 updateSetting("marginSize", e.target.value as any)
               }
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground"
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground sm:py-2 sm:text-xs"
             >
               <option value="none">Tanpa Margin</option>
               <option value="small">Margin Kecil</option>
@@ -375,7 +375,7 @@ export function ToolControlsPanel({
 
     case "PDF_TO_JPG":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <ImageIcon className="h-4 w-4 text-red-500" />
             <span>Kualitas Hasil Gambar</span>
@@ -388,7 +388,7 @@ export function ToolControlsPanel({
               onChange={(e) =>
                 updateSetting("jpgQuality", e.target.value as any)
               }
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground"
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground sm:py-2 sm:text-xs"
             >
               <option value="high">Tinggi (300 DPI - Jernih)</option>
               <option value="medium">Sedang (150 DPI)</option>
@@ -403,7 +403,7 @@ export function ToolControlsPanel({
     /* ====================================================================== */
     case "SIGN_PDF":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <ShieldCheck className="h-4 w-4 text-red-500" />
             <span>Tanda Tangan Dokumen</span>
@@ -415,7 +415,7 @@ export function ToolControlsPanel({
               value={settings.signName || ""}
               onChange={(e) => updateSetting("signName", e.target.value)}
               placeholder="Contoh: John Doe"
-              className="bg-background text-xs"
+              className="bg-background text-sm sm:text-xs"
             />
           </div>
 
@@ -426,7 +426,7 @@ export function ToolControlsPanel({
               onChange={(e) =>
                 updateSetting("signPosition", e.target.value as any)
               }
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground"
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground sm:py-2 sm:text-xs"
             >
               <option value="bottom-right">Bawah Kanan</option>
               <option value="bottom-left">Bawah Kiri</option>
@@ -447,24 +447,24 @@ export function ToolControlsPanel({
     case "POWERPOINT_TO_PDF":
     case "HTML_TO_PDF":
       return (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Sparkles className="h-4 w-4 text-red-500" />
             <span>Opsi Konversi Dokumen</span>
           </div>
 
-          <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-card p-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card p-3 transition-colors active:bg-muted/50">
             <input
               type="checkbox"
               checked={!!settings.enableOcr}
               onChange={(e) => updateSetting("enableOcr", e.target.checked)}
-              className="h-4 w-4 accent-red-600"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
             />
             <div className="text-xs">
               <div className="font-bold text-foreground">
                 Aktifkan OCR (Pengenalan Teks)
               </div>
-              <div className="text-[11px] text-muted-foreground">
+              <div className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
                 Ubah dokumen hasil pemindaian/scan menjadi teks yang bisa
                 diedit.
               </div>

@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 
 // ============================================================================
-// TYPES
+// TYPES (TIDAK BERUBAH)
 // ============================================================================
 
 export interface ShowFilesInputFile {
@@ -61,12 +61,11 @@ export interface ShowFilesDialogProps {
   defaultOpen?: boolean;
   previewUrls?: Record<string, string>;
   downloadUrls?: Record<string, string>;
-  /** Tampilkan banner savings (default: true) */
   showSavings?: boolean;
 }
 
 // ============================================================================
-// ICON MAPPER
+// ICON MAPPER (TIDAK BERUBAH)
 // ============================================================================
 
 function getFileIcon(mime: string, name: string) {
@@ -101,7 +100,7 @@ function getFileColor(mime: string, name: string): string {
 }
 
 // ============================================================================
-// SAVINGS DONUT — KONSISTEN DENGAN TaskProgressCard
+// SAVINGS DONUT (TIDAK BERUBAH)
 // ============================================================================
 
 function SavingsDonut({
@@ -173,10 +172,10 @@ function SavingsDonut({
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold tabular-nums leading-none text-green-600 dark:text-green-500">
+        <span className="text-lg font-bold tabular-nums leading-none text-green-600 dark:text-green-500 sm:text-xl">
           {percent.toFixed(0)}%
         </span>
-        <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground sm:mt-1 sm:text-[9px]">
           Saved
         </span>
       </div>
@@ -185,7 +184,7 @@ function SavingsDonut({
 }
 
 // ============================================================================
-// MAIN COMPONENT
+// MAIN COMPONENT (LOGIKA TIDAK BERUBAH)
 // ============================================================================
 
 export function ShowFilesDialog({
@@ -249,11 +248,9 @@ export function ShowFilesDialog({
     outputFiles.length,
   ]);
 
-  // Banner savings HANYA muncul jika tool memang mengompresi (showSavingsProp=true)
   const showSavings =
     showSavingsProp && isCompleted && outputFiles.length > 0;
 
-  // Filter
   const filteredInput = React.useMemo(() => {
     if (activeTab === "output") return [];
     const q = search.trim().toLowerCase();
@@ -277,26 +274,26 @@ export function ShowFilesDialog({
 
   return (
     <Dialog open={actualOpen} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
-        {/* ===================== HEADER ===================== */}
-        <DialogHeader className="border-b px-5 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <DialogTitle className="text-base font-semibold">
+      <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0 max-h-[90vh] flex flex-col">
+        {/* HEADER */}
+        <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-5 sm:py-4">
+          <div className="flex items-start justify-between gap-3 sm:items-center sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-sm font-semibold sm:text-base">
                 Daftar File
               </DialogTitle>
-              <DialogDescription className="mt-0.5 text-xs">
+              <DialogDescription className="mt-0.5 text-[11px] sm:text-xs">
                 {isCompleted
                   ? `${totalFiles} file terkait tugas ini`
                   : `${inputFiles.length} file input`}
               </DialogDescription>
             </div>
-            <div className="flex shrink-0 items-center gap-2 text-xs">
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 font-medium text-blue-600 dark:text-blue-400">
+            <div className="flex shrink-0 flex-col items-end gap-1 text-[10px] sm:flex-row sm:items-center sm:gap-2 sm:text-xs">
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 font-medium text-blue-600 dark:text-blue-400 sm:px-2.5 sm:py-1">
                 {inputFiles.length} input
               </span>
               {isCompleted && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 font-medium text-green-600 dark:text-green-400">
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 font-medium text-green-600 dark:text-green-400 sm:px-2.5 sm:py-1">
                   {outputFiles.length} output
                 </span>
               )}
@@ -304,33 +301,35 @@ export function ShowFilesDialog({
           </div>
         </DialogHeader>
 
-        {/* ===================== SAVINGS BANNER ===================== */}
+        {/* SAVINGS BANNER */}
         {showSavings && (
-          <div className="border-b bg-gradient-to-br from-green-500/5 via-background to-green-500/5 px-5 py-4">
-            <div className="flex items-center gap-5">
+          <div className="shrink-0 border-b bg-gradient-to-br from-green-500/5 via-background to-green-500/5 px-4 py-3 sm:px-5 sm:py-4">
+            <div className="flex items-center gap-3 sm:gap-5">
               <SavingsDonut
                 percent={savingsPercent}
-                size={96}
-                strokeWidth={10}
+                size={72}
+                strokeWidth={8}
               />
 
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                  <Sparkles className="h-3.5 w-3.5 text-green-500" />
-                  {savingsPercent > 0 ? (
-                    <>
-                      File sekarang{" "}
-                      <span className="text-green-600 dark:text-green-500">
-                        {savingsPercent.toFixed(0)}% lebih kecil
-                      </span>
-                      !
-                    </>
-                  ) : (
-                    "File sudah optimal"
-                  )}
+                <p className="flex items-start gap-1.5 text-[13px] font-semibold text-foreground sm:text-sm">
+                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-500" />
+                  <span className="line-clamp-2">
+                    {savingsPercent > 0 ? (
+                      <>
+                        File sekarang{" "}
+                        <span className="text-green-600 dark:text-green-500">
+                          {savingsPercent.toFixed(0)}% lebih kecil
+                        </span>
+                        !
+                      </>
+                    ) : (
+                      "File sudah optimal"
+                    )}
+                  </span>
                 </p>
 
-                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:mt-2 sm:text-sm">
                   <span className="font-medium tabular-nums text-muted-foreground line-through decoration-muted-foreground/40">
                     {formatSize(totalInputSize)}
                   </span>
@@ -341,7 +340,7 @@ export function ShowFilesDialog({
                 </div>
 
                 {savingsPercent > 0 && (
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-[11px]">
                     Menghemat{" "}
                     <span className="font-semibold text-foreground">
                       {formatSize(totalInputSize - totalOutputSize)}
@@ -354,19 +353,19 @@ export function ShowFilesDialog({
           </div>
         )}
 
-        {/* ===================== INFO PANEL (tanpa savings) ===================== */}
+        {/* INFO PANEL (tanpa savings) */}
         {!showSavings && isCompleted && outputFiles.length > 0 && (
-          <div className="border-b bg-gradient-to-br from-green-500/5 via-background to-green-500/5 px-5 py-4">
+          <div className="shrink-0 border-b bg-gradient-to-br from-green-500/5 via-background to-green-500/5 px-4 py-3 sm:px-5 sm:py-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-500/10 text-green-600 dark:text-green-500">
-                <Check className="h-5 w-5" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/10 text-green-600 dark:text-green-500 sm:h-10 sm:w-10">
+                <Check className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground sm:text-sm">
                   <Sparkles className="h-3.5 w-3.5 text-green-500" />
                   File berhasil diproses!
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-[11px]">
                   {outputFiles.length > 1
                     ? `${outputFiles.length} file output siap diunduh`
                     : `Ukuran output: ${formatSize(totalOutputSize)}`}
@@ -376,10 +375,10 @@ export function ShowFilesDialog({
           </div>
         )}
 
-        {/* ===================== TOOLBAR ===================== */}
+        {/* TOOLBAR */}
         {totalFiles > 3 && (
-          <div className="border-b px-5 py-3">
-            <div className="flex items-center gap-2">
+          <div className="shrink-0 border-b px-4 py-2.5 sm:px-5 sm:py-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -401,14 +400,14 @@ export function ShowFilesDialog({
               </div>
 
               {isCompleted && (
-                <div className="flex shrink-0 items-center rounded-md border bg-muted/40 p-0.5">
+                <div className="flex shrink-0 items-center justify-center rounded-md border bg-muted/40 p-0.5 sm:justify-start">
                   {(["all", "input", "output"] as const).map((tab) => (
                     <button
                       key={tab}
                       type="button"
                       onClick={() => setActiveTab(tab)}
                       className={cn(
-                        "rounded px-2.5 py-1 text-xs font-medium capitalize transition-colors",
+                        "flex-1 rounded px-2.5 py-1 text-[11px] font-medium capitalize transition-colors sm:flex-none sm:text-xs",
                         activeTab === tab
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
@@ -427,15 +426,15 @@ export function ShowFilesDialog({
           </div>
         )}
 
-        {/* ===================== BODY ===================== */}
-        <div className="max-h-[55vh] overflow-y-auto px-5 py-4">
+        {/* BODY */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
           {!hasResults ? (
             <EmptyState
               hasSearch={search.trim().length > 0}
               isCompleted={isCompleted}
             />
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {filteredInput.length > 0 && (
                 <FileSection
                   title="File Input"
@@ -476,7 +475,7 @@ export function ShowFilesDialog({
 }
 
 // ============================================================================
-// SUB-COMPONENT: Empty State
+// EMPTY STATE (TIDAK BERUBAH)
 // ============================================================================
 
 function EmptyState({
@@ -487,14 +486,14 @@ function EmptyState({
   isCompleted: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-        <Inbox className="h-6 w-6 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center gap-2 py-8 text-center sm:py-12">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted sm:h-12 sm:w-12">
+        <Inbox className="h-5 w-5 text-muted-foreground sm:h-6 sm:w-6" />
       </div>
-      <p className="text-sm font-medium text-foreground">
+      <p className="text-[13px] font-medium text-foreground sm:text-sm">
         {hasSearch ? "Tidak ada file yang cocok" : "Belum ada file"}
       </p>
-      <p className="max-w-xs text-xs text-muted-foreground">
+      <p className="max-w-xs text-[11px] text-muted-foreground sm:text-xs">
         {hasSearch
           ? "Coba kata kunci lain atau hapus filter."
           : isCompleted
@@ -506,7 +505,7 @@ function EmptyState({
 }
 
 // ============================================================================
-// SUB-COMPONENT: File Section
+// FILE SECTION (TIDAK BERUBAH)
 // ============================================================================
 
 interface FileItem {
@@ -542,7 +541,7 @@ function FileSection({
           accentClass
         )}
       >
-        <p className="text-xs font-semibold uppercase tracking-wider text-foreground">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground sm:text-xs">
           {title}
         </p>
         <span className="rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
@@ -560,7 +559,7 @@ function FileSection({
 }
 
 // ============================================================================
-// SUB-COMPONENT: File Row
+// FILE ROW (TIDAK BERUBAH)
 // ============================================================================
 
 const FileRow = React.memo(function FileRow({ file }: { file: FileItem }) {
@@ -580,10 +579,10 @@ const FileRow = React.memo(function FileRow({ file }: { file: FileItem }) {
   };
 
   return (
-    <li className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/40">
+    <li className="group flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-muted/40 sm:gap-3">
       <div
         className={cn(
-          "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md",
+          "relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md sm:h-9 sm:w-9",
           colorClass
         )}
       >
@@ -595,23 +594,23 @@ const FileRow = React.memo(function FileRow({ file }: { file: FileItem }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <Icon className="h-4 w-4" />
+          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
         <p
-          className="truncate text-sm font-medium text-foreground"
+          className="truncate text-[13px] font-medium text-foreground sm:text-sm"
           title={file.name}
         >
           {file.name}
         </p>
-        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+        <p className="mt-0.5 text-[11px] tabular-nums text-muted-foreground sm:text-xs">
           {formatSize(file.size)}
         </p>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
         <button
           type="button"
           onClick={handleCopy}
@@ -643,7 +642,7 @@ const FileRow = React.memo(function FileRow({ file }: { file: FileItem }) {
 });
 
 // ============================================================================
-// HELPERS
+// HELPERS (TIDAK BERUBAH)
 // ============================================================================
 
 function formatSize(bytes: number): string {

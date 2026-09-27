@@ -36,11 +36,8 @@ interface Props {
   onRemove: () => void;
   onShowFiles: () => void;
   className?: string;
-  /** Tampilkan grafik savings (default: true) */
   showSavings?: boolean;
-  /** Label custom untuk bagian savings */
   savingsTitle?: string;
-  /** Label custom untuk "Menghemat" */
   savingsDescription?: string;
 }
 
@@ -71,7 +68,6 @@ export function TaskProgressCard({
     return outputFileName ?? "—";
   }, [isMulti, outputCount, outputFileName]);
 
-  // Hitung savings (hanya jika showSavings = true)
   const savingsPercent = React.useMemo(() => {
     if (!showSavings) return 0;
     if (!isCompleted || !outputFileSize || inputFileSize === 0) return 0;
@@ -102,48 +98,55 @@ export function TaskProgressCard({
       aria-live="polite"
     >
       {/* ================= Bagian atas: file input + status ================= */}
-      <div className="p-4 sm:p-5">
-        <div className="flex items-start gap-3.5">
+      <div className="p-3 sm:p-4 lg:p-5">
+        <div className="flex items-start gap-2.5 sm:gap-3.5">
           <div
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors sm:h-11 sm:w-11",
               status === "completed"
                 ? "bg-green-500/10 text-green-600 dark:text-green-500"
                 : "bg-muted text-muted-foreground"
             )}
             aria-hidden="true"
           >
-            <FileText className="h-5 w-5" />
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
 
           <div className="min-w-0 flex-1">
             <p
-              className="truncate text-sm font-semibold leading-tight"
+              className="truncate text-[13px] font-semibold leading-tight sm:text-sm"
               title={inputFileName}
             >
               {inputFileName}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            <p className="mt-0.5 text-[11px] tabular-nums text-muted-foreground sm:mt-1 sm:text-xs">
               {sizeLabel}
             </p>
           </div>
 
-          <StatusBadge status={status} />
+          <div className="hidden sm:block">
+            <StatusBadge status={status} />
+          </div>
 
           <button
             type="button"
             onClick={onRemove}
             aria-label="Tutup"
-            className="-mr-1.5 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="-mr-1 -mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
+        </div>
+
+        {/* Status badge mobile — muncul di bawah, hanya di mobile */}
+        <div className="mt-3 sm:hidden">
+          <StatusBadge status={status} />
         </div>
 
         {/* Progress */}
         {status === "processing" && (
-          <div className="mt-4">
-            <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+          <div className="mt-3 sm:mt-4">
+            <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px] sm:text-xs">
               <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
                 <Loader2 className="h-3 w-3 shrink-0 animate-spin motion-reduce:animate-none" />
                 <span className="truncate">{statusLabel ?? "Memproses..."}</span>
@@ -153,7 +156,7 @@ export function TaskProgressCard({
               </span>
             </div>
             <div
-              className="relative h-2 w-full overflow-hidden rounded-full bg-muted"
+              className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted sm:h-2"
               role="progressbar"
               aria-valuenow={pct}
               aria-valuemin={0}
@@ -170,19 +173,21 @@ export function TaskProgressCard({
         )}
       </div>
 
-      {/* ================= Bagian savings (hanya jika showSavings) ================= */}
+      {/* ================= Bagian savings ================= */}
       {isCompleted && showSavings && savingsPercent > 0 && (
-        <div className="border-t bg-gradient-to-br from-green-500/5 via-background to-green-500/5 px-4 py-4 sm:px-5">
-          <div className="flex items-center gap-5">
-            <SavingsDonut percent={savingsPercent} size={72} strokeWidth={8} />
+        <div className="border-t bg-gradient-to-br from-green-500/5 via-background to-green-500/5 px-3 py-3 sm:px-5 sm:py-4">
+          <div className="flex items-center gap-3 sm:gap-5">
+            <SavingsDonut percent={savingsPercent} size={64} strokeWidth={7} />
 
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground sm:text-sm">
                 <Sparkles className="h-3.5 w-3.5 text-green-500" />
-                {savingsTitle ?? "File berhasil dikompres!"}
+                <span className="line-clamp-2">
+                  {savingsTitle ?? "File berhasil dikompres!"}
+                </span>
               </p>
 
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:mt-2 sm:text-sm">
                 <span className="font-medium tabular-nums text-muted-foreground line-through decoration-muted-foreground/40">
                   {sizeLabel}
                 </span>
@@ -192,7 +197,7 @@ export function TaskProgressCard({
                 </span>
               </div>
 
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-1 text-[10px] text-muted-foreground sm:text-[11px]">
                 {savingsDescription ?? "Menghemat"}{" "}
                 <span className="font-semibold text-foreground">
                   {formatSize(inputFileSize - (outputFileSize ?? 0))}
@@ -204,19 +209,19 @@ export function TaskProgressCard({
         </div>
       )}
 
-      {/* ================= Info output (untuk tool tanpa savings) ================= */}
+      {/* ================= Info output (tanpa savings) ================= */}
       {isCompleted && !showSavings && (
-        <div className="border-t bg-gradient-to-br from-green-500/5 via-background to-green-500/5 px-4 py-4 sm:px-5">
+        <div className="border-t bg-gradient-to-br from-green-500/5 via-background to-green-500/5 px-3 py-3 sm:px-5 sm:py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-500/10 text-green-600 dark:text-green-500">
-              <Check className="h-5 w-5" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/10 text-green-600 dark:text-green-500 sm:h-10 sm:w-10">
+              <Check className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground sm:text-sm">
                 <Sparkles className="h-3.5 w-3.5 text-green-500" />
                 File berhasil diproses!
               </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-[11px]">
                 {isMulti
                   ? `${outputCount} file siap diunduh dalam bentuk .zip`
                   : `Ukuran: ${outputSizeLabel ?? "—"}`}
@@ -227,11 +232,11 @@ export function TaskProgressCard({
       )}
 
       {/* ================= Bagian bawah: output + aksi ================= */}
-      <div className="flex flex-col gap-3 border-t bg-muted/30 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="flex flex-col gap-2 border-t bg-muted/30 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-5 sm:py-3.5">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           <div
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9",
               status === "completed" &&
                 "bg-green-500/10 text-green-600 dark:text-green-500",
               status === "failed" && "bg-destructive/10 text-destructive",
@@ -240,16 +245,19 @@ export function TaskProgressCard({
             )}
             aria-hidden="true"
           >
-            <OutputIcon className="h-[18px] w-[18px]" />
+            <OutputIcon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
           </div>
 
           <div className="min-w-0">
             {status === "completed" ? (
-              <p className="truncate text-sm font-medium" title={outputDisplay}>
+              <p
+                className="truncate text-[13px] font-medium sm:text-sm"
+                title={outputDisplay}
+              >
                 {outputDisplay}
               </p>
             ) : (
-              <p className="truncate text-sm text-muted-foreground">
+              <p className="truncate text-[13px] text-muted-foreground sm:text-sm">
                 {status === "failed"
                   ? "Tidak ada output"
                   : status === "processing"
@@ -265,7 +273,7 @@ export function TaskProgressCard({
             <button
               type="button"
               onClick={onShowFiles}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
             >
               <span>Detail</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -274,7 +282,7 @@ export function TaskProgressCard({
             <Button
               onClick={onDownload}
               size="sm"
-              className="h-9 gap-1.5 bg-green-600 px-4 text-sm font-medium hover:bg-green-700"
+              className="h-9 w-full gap-1.5 bg-green-600 px-4 text-[13px] font-medium hover:bg-green-700 sm:w-auto sm:text-sm"
             >
               <Download className="h-4 w-4" />
               Unduh
@@ -287,7 +295,7 @@ export function TaskProgressCard({
 }
 
 // ============================================================================
-// SAVINGS DONUT
+// SAVINGS DONUT (TIDAK BERUBAH)
 // ============================================================================
 
 function SavingsDonut({
@@ -359,10 +367,10 @@ function SavingsDonut({
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-base font-bold tabular-nums leading-none text-green-600 dark:text-green-500">
+        <span className="text-sm font-bold tabular-nums leading-none text-green-600 dark:text-green-500 sm:text-base">
           {percent.toFixed(0)}%
         </span>
-        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="mt-0.5 text-[7px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[8px]">
           Saved
         </span>
       </div>
@@ -371,18 +379,18 @@ function SavingsDonut({
 }
 
 // ============================================================================
-// SUB-COMPONENTS & HELPERS
+// STATUS BADGE (TIDAK BERUBAH)
 // ============================================================================
 
 function StatusBadge({ status }: { status: CardStatus }) {
   const base =
-    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium";
+    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium sm:px-2.5 sm:py-1 sm:text-xs";
 
   switch (status) {
     case "pending":
       return (
         <span className={cn(base, "bg-muted text-muted-foreground")}>
-          <Clock className="h-3.5 w-3.5" />
+          <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           Menunggu
         </span>
       );
@@ -409,14 +417,14 @@ function StatusBadge({ status }: { status: CardStatus }) {
             "bg-green-500/10 text-green-700 dark:text-green-400"
           )}
         >
-          <CheckCircle2 className="h-3.5 w-3.5" />
+          <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           Selesai
         </span>
       );
     case "failed":
       return (
         <span className={cn(base, "bg-destructive/10 text-destructive")}>
-          <XCircle className="h-3.5 w-3.5" />
+          <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           Gagal
         </span>
       );

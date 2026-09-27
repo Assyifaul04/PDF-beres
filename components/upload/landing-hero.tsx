@@ -90,12 +90,10 @@ export function LandingHero({
     fetch(`/api/files/${fileId}`, { method: "DELETE" }).catch(() => null);
   };
 
-  // Handler untuk mengubah urutan file setelah dipindah (Drag & Drop)
   const handleReorderFiles = (reorderedFiles: UploadedFile[]) => {
     setUploadedFiles(reorderedFiles);
   };
 
-  // Handler untuk memutar rotasi gambar PDF (0° -> 90° -> 180° -> 270°)
   const handleRotateFile = (fileId: string) => {
     setUploadedFiles((prev) =>
       prev.map((f) => {
@@ -126,7 +124,9 @@ export function LandingHero({
     if (uploadedFiles.length === 0) return;
 
     if (uploadedFiles.length < minFiles) {
-      toast.error(`Tambahkan ${minFiles - uploadedFiles.length} file lagi untuk melanjutkan`);
+      toast.error(
+        `Tambahkan ${minFiles - uploadedFiles.length} file lagi untuk melanjutkan`
+      );
       return;
     }
 
@@ -141,7 +141,6 @@ export function LandingHero({
           fileIds: uploadedFiles.map((f) => f.fileId),
           settings: {
             ...settings,
-            // Mengirim urutan file terbaru dan rotasinya ke backend
             fileOrders: uploadedFiles.map((f) => ({
               fileId: f.fileId,
               rotation: f.rotation || 0,
@@ -168,7 +167,7 @@ export function LandingHero({
 
   if (uploadedFiles.length > 0) {
     return (
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-4 sm:py-6 lg:px-8 lg:py-8">
         <input
           ref={hiddenInputRef}
           type="file"
@@ -193,10 +192,12 @@ export function LandingHero({
 
         {isUploading && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-4 px-4">
               <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-base font-medium text-foreground">Mengunggah... {progress}%</p>
-              <div className="h-2.5 w-64 overflow-hidden rounded-full bg-muted">
+              <p className="text-base font-medium text-foreground">
+                Mengunggah... {progress}%
+              </p>
+              <div className="h-2.5 w-64 max-w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full bg-primary transition-all duration-300"
                   style={{ width: `${progress}%` }}
@@ -210,7 +211,7 @@ export function LandingHero({
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+    <div className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-4 sm:py-8 lg:px-8 lg:py-12">
       <FileDropzone
         title={title}
         description={description}
@@ -225,10 +226,12 @@ export function LandingHero({
 
       {isUploading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center rounded-3xl bg-background/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-4 px-4">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-base font-medium text-foreground">Mengunggah... {progress}%</p>
-            <div className="h-2.5 w-64 overflow-hidden rounded-full bg-muted">
+            <p className="text-base font-medium text-foreground">
+              Mengunggah... {progress}%
+            </p>
+            <div className="h-2.5 w-64 max-w-full overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full bg-primary transition-all duration-300"
                 style={{ width: `${progress}%` }}

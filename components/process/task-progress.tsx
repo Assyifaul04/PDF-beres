@@ -12,7 +12,7 @@ import {
 } from "@/lib/client/converters";
 
 // ============================================================================
-// TYPES
+// TYPES (TIDAK BERUBAH)
 // ============================================================================
 
 type TaskStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
@@ -59,15 +59,15 @@ interface Props {
 }
 
 // ============================================================================
-// SAVINGS TOOLS — Tool yang menampilkan grafik "SAVED"
+// SAVINGS TOOLS (TIDAK BERUBAH)
 // ============================================================================
 
 const SAVINGS_TOOLS = new Set<string>([
-  "COMPRESS_PDF",         // Kompresi → ukuran turun
-  "PDF_TO_JPG",           // PDF → JPG biasanya lebih kecil
-  "PDF_TO_WORD",          // PDF → Word biasanya lebih kecil
-  "PDF_TO_POWERPOINT",    // PDF → PPT biasanya lebih kecil
-  "PDF_TO_EXCEL",         // PDF → Excel biasanya lebih kecil
+  "COMPRESS_PDF",
+  "PDF_TO_JPG",
+  "PDF_TO_WORD",
+  "PDF_TO_POWERPOINT",
+  "PDF_TO_EXCEL",
 ]);
 
 function shouldShowSavings(toolType: string): boolean {
@@ -113,7 +113,7 @@ function getSavingsLabels(toolType: string): {
 }
 
 // ============================================================================
-// HELPERS
+// HELPERS (TIDAK BERUBAH)
 // ============================================================================
 
 function mapStatusToCard(status: TaskStatus): CardStatus {
@@ -168,7 +168,7 @@ async function reportError(taskId: string, message: string): Promise<void> {
 }
 
 // ============================================================================
-// COMPONENT
+// COMPONENT (TIDAK BERUBAH LOGIKA)
 // ============================================================================
 
 export function TaskProgress({
@@ -188,9 +188,7 @@ export function TaskProgress({
 
   const runsOnClient = isClientTool(task.toolType);
 
-  // ==========================================================================
   // AUTO-TRIGGER
-  // ==========================================================================
   React.useEffect(() => {
     if (hasTriggered.current) return;
     if (task.status !== "PENDING") return;
@@ -205,9 +203,7 @@ export function TaskProgress({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task.id, task.status, runsOnClient]);
 
-  // ==========================================================================
   // CLIENT-SIDE PROCESSING
-  // ==========================================================================
   async function runClientProcessing() {
     try {
       setTask((prev) => ({ ...prev, status: "PROCESSING" }));
@@ -286,9 +282,7 @@ export function TaskProgress({
     }
   }
 
-  // ==========================================================================
   // SERVER-SIDE PROCESSING
-  // ==========================================================================
   async function runServerProcessing() {
     try {
       setTask((prev) => ({ ...prev, status: "PROCESSING" }));
@@ -318,9 +312,7 @@ export function TaskProgress({
     }
   }
 
-  // ==========================================================================
   // POLLING
-  // ==========================================================================
   React.useEffect(() => {
     if (runsOnClient) return;
     if (task.status === "COMPLETED" || task.status === "FAILED") return;
@@ -345,9 +337,7 @@ export function TaskProgress({
     };
   }, [task.id, task.status, runsOnClient]);
 
-  // ==========================================================================
   // HANDLERS
-  // ==========================================================================
   const handleDownload = async () => {
     if (task.outputFiles.length <= 1) {
       const link = document.createElement("a");
@@ -382,9 +372,7 @@ export function TaskProgress({
     router.push(slug ? `/${slug}` : "/");
   };
 
-  // ==========================================================================
   // DERIVED
-  // ==========================================================================
   const cardStatus: CardStatus = mapStatusToCard(task.status);
 
   const inputFileName = task.inputFiles[0]?.originalName ?? "file";
@@ -393,17 +381,16 @@ export function TaskProgress({
   const outputFileSize = Number(task.outputFiles[0]?.sizeBytes ?? 0);
   const outputCount = task.outputFiles.length;
 
-  // Tentukan apakah tool ini menampilkan savings
   const showSavings = shouldShowSavings(task.toolType);
   const savingsLabels = getSavingsLabels(task.toolType);
 
   // ==========================================================================
-  // RENDER
+  // RENDER — responsive wrapper
   // ==========================================================================
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto w-full max-w-2xl space-y-3 px-3 sm:space-y-4 sm:px-4 lg:px-0">
       {categoryLabel && (
-        <h2 className="text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        <h2 className="text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground sm:text-xs">
           {categoryLabel}
         </h2>
       )}
@@ -435,9 +422,9 @@ export function TaskProgress({
       />
 
       {task.status === "FAILED" && task.errorMessage && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 sm:p-4">
           <p className="text-sm font-medium text-destructive">Detail Error</p>
-          <pre className="mt-2 whitespace-pre-wrap font-mono text-xs text-destructive/90">
+          <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-destructive/90 sm:text-xs">
             {task.errorMessage}
           </pre>
         </div>
