@@ -16,22 +16,22 @@ export function Monetag() {
   return (
     <>
       {/* ✅ In-Page Push — Zone 11901037 */}
-      <Script
+      {/* <Script
         id="monetag-inpage"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `(function(s){s.dataset.zone='11901037',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
         }}
-      />
+      /> */}
 
       {/* ✅ Vignette Banner — Zone 11901061 */}
-      <Script
+      {/* <Script
         id="monetag-vignette"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `(function(s){s.dataset.zone='11901061',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
         }}
-      />
+      /> */}
     </>
   );
 }
