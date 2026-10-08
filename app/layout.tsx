@@ -5,12 +5,16 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
+
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { Monetag } from "@/components/ads/monetag";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,12 +27,56 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://beres-jet.vercel.app"),
+
   title: {
     default: "Beres — All-in-One PDF Tools",
     template: "%s | Beres",
   },
+
   description:
-    "Merge, split, compress, convert, and edit PDF files online. Free, fast, and secure.",
+    "Beres adalah kumpulan PDF tools online gratis untuk merge, split, compress, convert, dan edit PDF dengan cepat dan mudah.",
+
+  keywords: [
+    "PDF tools",
+    "PDF tools online",
+    "PDF editor",
+    "merge PDF",
+    "split PDF",
+    "compress PDF",
+    "convert PDF",
+    "edit PDF",
+    "PDF gratis",
+    "all in one PDF tools",
+    "Beres PDF",
+  ],
+
+  authors: [{ name: "Beres" }],
+  creator: "Beres",
+  publisher: "Beres",
+
+  robots: {
+    index: true,
+    follow: true,
+  },
+
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    url: "https://beres-jet.vercel.app/",
+    siteName: "Beres",
+    title: "Beres — All-in-One PDF Tools",
+    description:
+      "Merge, split, compress, convert, dan edit PDF secara online dengan cepat dan gratis.",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Beres — All-in-One PDF Tools",
+    description:
+      "All-in-One PDF Tools untuk merge, split, compress, convert, dan edit PDF.",
+  },
+
   other: {
     "google-adsense-account": "ca-pub-2352891869256632",
   },
@@ -56,7 +104,7 @@ export default async function RootLayout({
       )}
     >
       <head>
-        {/* ✅ Script AdSense */}
+        {/* Google AdSense */}
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2352891869256632"
@@ -64,6 +112,7 @@ export default async function RootLayout({
           strategy="afterInteractive"
         />
       </head>
+
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthSessionProvider>
@@ -78,9 +127,10 @@ export default async function RootLayout({
           </AuthSessionProvider>
         </NextIntlClientProvider>
 
-        {/* ✅ Monetag — Zone 11901037 */}
+        {/* Monetag — Zone 11901037 */}
         <Monetag />
       </body>
     </html>
   );
 }
+
